@@ -1,0 +1,21 @@
+css
+Copy
+@font-face {
+  font-family: 'AgencyFB-Bold';
+  src: url('/fonts/AgencyFB-Bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Delius-Regular';
+  src: url('/fonts/Delius-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Borel-Regular';
+  src: url('/fonts/Borel-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'KomikaAxis.ttf';
+  src: url('/fonts/KomikaAxis.ttf') format('truetype');
+}

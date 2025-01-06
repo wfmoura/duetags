@@ -1,0 +1,14 @@
+@font-face {
+  font-family: 'AgencyFB-Bold';
+  src: url('../public/fonts/AgencyFB-Bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Delius-Regular';
+  src: url('../public/fonts/Delius-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Borel-Regular';
+  src: url('../public/fonts/Borel-Regular.ttf') format('truetype');
+}

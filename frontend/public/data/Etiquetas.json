@@ -1,0 +1,88 @@
+{
+  "etiquetas": [
+    {
+      "id": "mini",
+      "nome": "Mini",
+      "width": 3.0,
+      "height": 1.5,
+      "tipo": "Mini",
+      "area_delimitada": {
+        "left": 0,
+        "top": 0,
+        "width": 3.0,
+        "height": 1.5
+      },
+      "campos": ["nome"]
+    },
+    {
+      "id": "grande",
+      "nome": "Grande",
+      "width": 8.0,
+      "height": 4.0,
+      "tipo": "Grande",
+      "area_delimitada": {
+        "left": 2.9,
+        "top": 0.7,
+        "width": 4.5,
+        "height": 2.5
+      },
+      "campos": ["nome", "complemento", "turma"]
+    },
+    {
+      "id": "pequena",
+      "nome": "Pequena",
+      "width": 5.0,
+      "height": 1.0,
+      "tipo": "Pequena",
+      "area_delimitada": {
+        "left": 1.15,
+        "top": 0.1,
+        "width": 3.6,
+        "height": 0.8
+      },
+      "campos": ["nome"]
+    },
+    {
+      "id": "intermediaria",
+      "nome": "Intermediária",
+      "width": 6.0,
+      "height": 2.5,
+      "tipo": "Intermediária",
+      "area_delimitada": {
+        "left": 1.8,
+        "top": 0.2,
+        "width": 3.9,
+        "height": 2.1
+      },
+      "campos": ["nome", "complemento"]
+    },
+    {
+      "id": "redonda",
+      "nome": "Redonda",
+      "width": 2.5,
+      "height": 2.5,
+      "tipo": "Redonda",
+      "area_delimitada": {
+        "left": 0.35,
+        "top": 0.4,
+        "width": 1.8,
+        "height": 1.0
+      },
+      "campos": ["nome"]
+    },
+    {
+      "id": "termocolante",
+      "nome": "Termocolante para Roupas",
+      "width": 6.0,
+      "height": 1.5,
+      "tipo": "Termocolante para Roupas",
+      "area_delimitada": {
+        "left": 1,
+        "top": 0.1,
+        "width": 4.0,
+        "height": 1.3
+      },
+      "campos": ["nome"]
+    }
+  ]
+}

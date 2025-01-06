@@ -1,0 +1,56 @@
+{
+  "kits": [
+    {
+      "id": 1,
+      "nome": "Kit 1",
+      "thumbnail": "images/kits/kit1.jpg",
+      "etiquetas": [
+        { "id": "grande", "quantidade": 20 },
+        { "id": "pequena", "quantidade": 50 }
+      ],
+      "preco": "R$ 60,00"
+    },
+    {
+      "id": 2,
+      "nome": "Espaço",
+      "thumbnail": "images/kits/kit2.jpg",
+      "etiquetas": [
+        { "id": "grande", "quantidade": 10 },
+        { "id": "intermediaria", "quantidade": 9 },
+        { "id": "redonda", "quantidade": 20 },
+        { "id": "pequena", "quantidade": 20 },
+        { "id": "mini", "quantidade": 12 }
+      ],
+      "preco": "R$ 60,00"
+    },
+    {
+      "id": 3,
+      "nome": "Floresta",
+      "thumbnail": "images/kits/kit3.jpg",
+      "etiquetas": [
+        { "id": "pequena", "quantidade": 50 },
+        { "id": "mini", "quantidade": 20 },
+        { "id": "redonda", "quantidade": 8 }
+      ],
+      "preco": "R$ 40,00"
+    },
+    {
+      "id": 4,
+      "nome": "KIT 4",
+      "thumbnail": "images/kits/kit4.jpg",
+      "etiquetas": [
+        { "id": "intermediaria", "quantidade": 20 }
+      ],
+      "preco": "R$ 40,00"
+    },
+    {
+      "id": 5,
+      "nome": "KIT 5",
+      "thumbnail": "images/kits/kit5.jpg",
+      "etiquetas": [
+        { "id": "termocolante", "quantidade": 20 }
+      ],
+      "preco": "R$ 40,00"
+    }
+  ]
+}
