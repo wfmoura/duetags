@@ -1,42 +1,107 @@
 {
   "temas": [
     {
-      "id": "lol",
-      "nome": "LOL",
-      "thumbnail": "images/lol/thumbnail.png",
+      "id": "cachorro_cute",
+      "nome": "Cachorro cute",
+      "thumbnail": "images/temas/cachorro_cute/thumbnail.png",
       "caminho_img": {
-        "mini": "images/lol/mini.png",
-        "pequena": "images/lol/pequena.png",
-        "intermediaria": "images/lol/intermediaria.png",
-        "grande": "images/lol/grande.png",
-        "redonda": "images/lol/redonda.png",
-        "termocolante": "images/lol/termocolante.png"
+        "mini": "images/temas/cachorro_cute/mini.png",
+        "pequena": "images/temas/cachorro_cute/pequena.png",
+        "intermediaria": "images/temas/cachorro_cute/intermediaria.png",
+        "grande": "images/temas/cachorro_cute/grande.png",
+        "redonda": "images/temas/cachorro_cute/redonda.png",
+        "termocolante": "images/temas/cachorro_cute/termocolante.png"
       }
     },
     {
-      "id": "espaco",
-      "nome": "Espaço",
-      "thumbnail": "images/espaco/thumbnail.png",
+      "id": "foguete",
+      "nome": "Foguete",
+      "thumbnail": "images/temas/foguete/thumbnail.png",
       "caminho_img": {
-        "mini": "images/espaco/mini.png",
-        "pequena": "images/espaco/pequena.png",
-        "intermediaria": "images/unicornio/intermediaria.png",
-        "grande": "images/espaco/grande.png",
-        "redonda": "images/espaco/redonda.png",
-        "termocolante": "images/espaco/termocolante.png"
+        "mini": "images/temas/foguete/mini.png",
+        "pequena": "images/temas/foguete/pequena.png",
+        "intermediaria": "images/temas/foguete/intermediaria.png",
+        "grande": "images/temas/foguete/grande.png",
+        "redonda": "images/temas/foguete/redonda.png",
+        "termocolante": "images/temas/foguete/termocolante.png"
       }
     },
     {
-      "id": "animais",
-      "nome": "Animais",
-      "thumbnail": "images/animais/thumbnail.png",
+      "id": "futebol",
+      "nome": "Futebol",
+      "thumbnail": "images/temas/futebol/thumbnail.png",
       "caminho_img": {
-        "mini": "images/animais/mini.png",
-        "pequena": "images/animais/pequena.png",
-        "intermediaria": "images/animais/intermediaria.png",
-        "grande": "images/animais/grande.png",
-        "redonda": "images/animais/redonda.png",
-        "termocolante": "images/animais/termocolante.png"
+        "mini": "images/temas/futebol/mini.png",
+        "pequena": "images/temas/futebol/pequena.png",
+        "intermediaria": "images/temas/futebol/intermediaria.png",
+        "grande": "images/temas/futebol/grande.png",
+        "redonda": "images/temas/futebol/redonda.png",
+        "termocolante": "images/temas/futebol/termocolante.png"
+      }
+    },
+    {
+      "id": "gatinho_cute",
+      "nome": "Gatinho cute",
+      "thumbnail": "images/temas/gatinho_cute/thumbnail.png",
+      "caminho_img": {
+        "mini": "images/temas/gatinho_cute/mini.png",
+        "pequena": "images/temas/gatinho_cute/pequena.png",
+        "intermediaria": "images/temas/gatinho_cute/intermediaria.png",
+        "grande": "images/temas/gatinho_cute/grande.png",
+        "redonda": "images/temas/gatinho_cute/redonda.png",
+        "termocolante": "images/temas/gatinho_cute/termocolante.png"
+      }
+    },
+    {
+      "id": "hulk",
+      "nome": "Hulk",
+      "thumbnail": "images/temas/hulk/thumbnail.png",
+      "caminho_img": {
+        "mini": "images/temas/hulk/mini.png",
+        "pequena": "images/temas/hulk/pequena.png",
+        "intermediaria": "images/temas/hulk/intermediaria.png",
+        "grande": "images/temas/hulk/grande.png",
+        "redonda": "images/temas/hulk/redonda.png",
+        "termocolante": "images/temas/hulk/termocolante.png"
+      }
+    },
+    {
+      "id": "rainbow_cute",
+      "nome": "Rainbow cute",
+      "thumbnail": "images/temas/rainbow_cute/thumbnail.png",
+      "caminho_img": {
+        "mini": "images/temas/rainbow_cute/mini.png",
+        "pequena": "images/temas/rainbow_cute/pequena.png",
+        "intermediaria": "images/temas/rainbow_cute/intermediaria.png",
+        "grande": "images/temas/rainbow_cute/grande.png",
+        "redonda": "images/temas/rainbow_cute/redonda.png",
+        "termocolante": "images/temas/rainbow_cute/termocolante.png"
+      }
+    },
+    {
+      "id": "unicornio",
+      "nome": "Unicórnio",
+      "thumbnail": "images/temas/unicornio/thumbnail.png",
+      "caminho_img": {
+        "mini": "images/temas/unicornio/mini.png",
+        "pequena": "images/temas/unicornio/pequena.png",
+        "intermediaria": "images/temas/unicornio/intermediaria.png",
+        "grande": "images/temas/unicornio/grande.png",
+        "redonda": "images/temas/unicornio/redonda.png",
+        "termocolante": "images/temas/unicornio/termocolante.png"
+      }
+    },
+    {
+      "id": "unicornio_cute",
+      "nome": "Unicórnio cute",
+      "thumbnail": "images/temas/unicornio_cute/thumbnail.png",
+      "caminho_img": {
+        "mini": "images/temas/unicornio_cute/mini.png",
+        "pequena": "images/temas/unicornio_cute/pequena.png",
+        "intermediaria": "images/temas/unicornio_cute/intermediaria.png",
+        "grande": "images/temas/unicornio_cute/grande.png",
+        "redonda": "images/temas/unicornio_cute/redonda.png",
+        "termocolante": "images/temas/unicornio_cute/termocolante.png"
       }
     }
   ]

@@ -1,15 +1,15 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import styled from 'styled-components';
 import { Box, Typography } from '@mui/material';
 import { AppContext } from '../contexts/AppContext';
+import { Rnd } from 'react-rnd';
+import { config } from '../config/config';
 
 const EtiquetaContainer = styled.div`
   position: relative;
   width: ${(props) => props.$width}cm;
   height: ${(props) => props.$height}cm;
-  background-image: url(${(props) => props.$backgroundImage});
-  background-size: cover;
-  background-position: center;
+  background-color: ${(props) => props.$backgroundColor};
   border: 1px dashed black;
   border-radius: ${(props) => (props.$tipo === 'redonda' ? '50%' : '5px')};
 `;
@@ -29,7 +29,7 @@ const AreaDelimitada = styled.div`
 `;
 
 const TextoContainer = styled.div`
-  font-size: ${({ $fontSizePx }) => $fontSizePx}px; // Tamanho da fonte em pixels
+  font-size: ${({ $fontSizePx }) => $fontSizePx}px;
   font-family: ${({ $fontFamily }) => $fontFamily};
   color: ${({ $textColor }) => $textColor};
   text-align: center;
@@ -40,32 +40,36 @@ const TextoContainer = styled.div`
 
 function Etiquetas({ kit, theme, customizations = {}, zoom }) {
   const { etiquetas } = useContext(AppContext);
-  const { nome = '', complemento = '', turma = '', fontFamily = 'AgencyFB-Bold', textColor = '#000000' } = customizations;
+  const { nome = '', complemento = '', turma = '', fontFamily = 'AgencyFB-Bold', textColor = config.personalizacao.corFontePadrao, corFundo = config.personalizacao.corFundoPadrao } = customizations;
+
+  const [personagemPosicao, setPersonagemPosicao] = useState({ x: 10, y: 10 });
+  const [personagemTamanho, setPersonagemTamanho] = useState({ width: 100, height: 100 });
+  const [showHighlight, setShowHighlight] = useState(false); // Destaque oculto por padrão
+
+  const tamanhoMinimo = config.personalizacao.tamanhoPersonagem.min;
+  const tamanhoMaximo = config.personalizacao.tamanhoPersonagem.max;
+
+  const toggleHighlight = () => {
+    setShowHighlight(!showHighlight);
+  };
 
   const calculateFontSize = (text, maxWidthCm, tipo) => {
-    const baseSizePx = 30; // Tamanho máximo da fonte em pixels
-    const minSizePx = 10; // Tamanho mínimo da fonte em pixels
-    const maxLength = 20; // Limite de caracteres
+    const baseSizePx = 30;
+    const minSizePx = 10;
+    const maxLength = 20;
+    const maxWidthPx = maxWidthCm * 37.8;
 
-    // Converte a largura máxima de centímetros para pixels
-    const maxWidthPx = maxWidthCm * 37.8; // 1cm = 37.8 pixels
+    const fontSizeBasedOnLength = baseSizePx * (maxLength / (text.length + 5));
+    const fontSizeBasedOnWidth = (maxWidthPx / maxLength) * 1.8;
 
-    // Calcula o tamanho da fonte com base no número de caracteres
-    const fontSizeBasedOnLength = baseSizePx * (maxLength / (text.length + 5)); // Ajuste para evitar tamanho inicial muito grande
-
-    // Calcula o tamanho da fonte com base no espaço disponível
-    const fontSizeBasedOnWidth = (maxWidthPx / maxLength) * 1.8; // Aumentamos o multiplicador para 1.8
-
-    // Para etiquetas redondas, ajustamos o cálculo para considerar o formato circular
     if (tipo === 'redonda') {
-      const areaRadiusPx = maxWidthPx / 2; // Raio da área delimitada em pixels
-      const fontSizeBasedOnCircle = (areaRadiusPx / Math.sqrt(text.length)) * 2.0; // Ajuste para o formato circular
+      const areaRadiusPx = maxWidthPx / 2;
+      const fontSizeBasedOnCircle = (areaRadiusPx / Math.sqrt(text.length)) * 2.0;
       return Math.min(Math.max(fontSizeBasedOnCircle, minSizePx), baseSizePx);
     }
 
-    // Retorna o menor valor entre os dois cálculos, respeitando os limites mínimo e máximo
     const finalFontSize = Math.min(fontSizeBasedOnLength, fontSizeBasedOnWidth);
-    return Math.max(finalFontSize, minSizePx); // Garante que o tamanho não seja menor que minSizePx
+    return Math.max(finalFontSize, minSizePx);
   };
 
   const etiquetasDoKit = kit.etiquetas.map((etiquetaKit) => {
@@ -76,7 +80,6 @@ function Etiquetas({ kit, theme, customizations = {}, zoom }) {
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
       {etiquetasDoKit.map((etiqueta, index) => {
-        const backgroundImage = theme.caminho_img[etiqueta.tipo.toLowerCase()];
         const area = etiqueta.area_delimitada;
 
         return (
@@ -85,8 +88,22 @@ function Etiquetas({ kit, theme, customizations = {}, zoom }) {
               $width={etiqueta.width * zoom}
               $height={etiqueta.height * zoom}
               $tipo={etiqueta.tipo}
-              $backgroundImage={backgroundImage}
+              $backgroundColor={corFundo}
             >
+              {/* Imagem de fundo (caminho_img) */}
+              {config.personalizacao.fundo && etiqueta.imagem && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    backgroundImage: `url(${theme.caminho_img[etiqueta.tipo.toLowerCase()]})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                />
+              )}
+
               <AreaDelimitada
                 $left={area.left * zoom}
                 $top={area.top * zoom}
@@ -121,6 +138,93 @@ function Etiquetas({ kit, theme, customizations = {}, zoom }) {
                   </TextoContainer>
                 )}
               </AreaDelimitada>
+
+              {/* Personagem (thumbnail) */}
+              {config.personalizacao.personagem && etiqueta.imagem && (
+                <Rnd
+                  default={{
+                    x: personagemPosicao.x,
+                    y: personagemPosicao.y,
+                    width: personagemTamanho.width,
+                    height: personagemTamanho.height,
+                  }}
+                  bounds="parent"
+                  minWidth={tamanhoMinimo.width}
+                  minHeight={tamanhoMinimo.height}
+                  maxWidth={tamanhoMaximo.width}
+                  maxHeight={tamanhoMaximo.height}
+                  onDragStop={(e, d) => {
+                    setPersonagemPosicao({ x: d.x, y: d.y });
+                  }}
+                  onResizeStop={(e, direction, ref, delta, position) => {
+                    setPersonagemTamanho({
+                      width: ref.style.width,
+                      height: ref.style.height,
+                    });
+                    setPersonagemPosicao({
+                      x: position.x,
+                      y: position.y,
+                    });
+                  }}
+                  style={{
+                    boxShadow: showHighlight ? '0 4px 8px rgba(0, 0, 0, 0.2)' : 'none', // Sombra condicional
+                    border: showHighlight ? '2px solid #4CAF50' : 'none', // Borda condicional
+                    zIndex: 1,
+                  }}
+                  resizeHandleStyles={{
+                    bottomRight: {
+                      width: '10px',
+                      height: '10px',
+                      backgroundColor: showHighlight ? 'white' : 'transparent', // Handle condicional
+                      border: showHighlight ? '2px solid #4CAF50' : 'none',
+                      borderRadius: '50%',
+                    },
+                    bottomLeft: {
+                      width: '10px',
+                      height: '10px',
+                      backgroundColor: showHighlight ? 'white' : 'transparent', // Handle condicional
+                      border: showHighlight ? '2px solid #4CAF50' : 'none',
+                      borderRadius: '50%',
+                    },
+                    topRight: {
+                      width: '10px',
+                      height: '10px',
+                      backgroundColor: showHighlight ? 'white' : 'transparent', // Handle condicional
+                      border: showHighlight ? '2px solid #4CAF50' : 'none',
+                      borderRadius: '50%',
+                    },
+                    topLeft: {
+                      width: '10px',
+                      height: '10px',
+                      backgroundColor: showHighlight ? 'white' : 'transparent', // Handle condicional
+                      border: showHighlight ? '2px solid #4CAF50' : 'none',
+                      borderRadius: '50%',
+                    },
+                  }}
+                  enableResizing={{
+                    bottom: showHighlight, // Redimensionamento condicional
+                    bottomLeft: showHighlight,
+                    bottomRight: showHighlight,
+                    left: showHighlight,
+                    right: showHighlight,
+                    top: showHighlight,
+                    topLeft: showHighlight,
+                    topRight: showHighlight,
+                  }}
+                  onClick={toggleHighlight}
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      backgroundImage: `url(${theme.thumbnail})`,
+                      backgroundSize: 'contain',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+                </Rnd>
+              )}
             </EtiquetaContainer>
             <Typography variant="body2" mt={1}>
               {etiqueta.nome} ({etiqueta.width * zoom}cm x {etiqueta.height * zoom}cm)

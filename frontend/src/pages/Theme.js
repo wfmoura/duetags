@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
 import { AppContext } from '../contexts/AppContext';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom'; // Adicionado
+import { useNavigate } from 'react-router-dom';
 
 const ThumbnailContainer = styled.div`
   display: inline-block;
@@ -16,8 +16,8 @@ const ThumbnailContainer = styled.div`
 
   &:hover {
     transform: scale(1.05);
-    border-color: '#4CAF50';
-    box-shadow: '0 8px 30px rgba(76, 175, 80, 0.5)';
+    border-color: #4CAF50;
+    box-shadow: 0 8px 30px rgba(76, 175, 80, 0.5);
   }
 
   img {
@@ -31,8 +31,8 @@ const ThumbnailContainer = styled.div`
 function Theme() {
   const { temas, selectedTheme, setSelectedTheme } = useContext(AppContext);
   const [selectedId, setSelectedId] = useState(selectedTheme?.id || null);
-  const navigate = useNavigate(); // Adicionado
-
+  const navigate = useNavigate();
+  console.log("Temas recebidos no Theme.js:", temas);
   useEffect(() => {
     if (selectedTheme) {
       setSelectedId(selectedTheme.id);
@@ -42,7 +42,7 @@ function Theme() {
   const handleThemeSelection = (theme) => {
     setSelectedTheme(theme);
     setSelectedId(theme.id);
-    navigate('/customize'); // Navega automaticamente para a tela de personalização
+    navigate('/customize');
   };
 
   return (
@@ -51,9 +51,9 @@ function Theme() {
       <Box display="flex" flexWrap="wrap" justifyContent="center">
         {temas.map((theme) => (
           <ThumbnailContainer
-            key={theme.id}
+            key={theme.id} // Adicionando a prop "key" com um valor único
             selected={theme.id === selectedId}
-            onClick={() => handleThemeSelection(theme)} // Navega ao clicar
+            onClick={() => handleThemeSelection(theme)}
           >
             <img src={theme.thumbnail} alt={theme.nome} />
           </ThumbnailContainer>

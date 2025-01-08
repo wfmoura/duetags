@@ -3,7 +3,8 @@ import { Box, TextField, Slider, Typography, Button, Card, CardContent, Grid, Av
 import { AppContext } from '../contexts/AppContext';
 import Etiquetas from '../components/Etiquetas';
 import { useNavigate } from 'react-router-dom';
-import { config } from '../config/config'; // Importando o arquivo de configuração
+import { config } from '../config/config';
+import CmykColorPicker from '../components/CmykColorPicker'; // Importe o componente personalizado
 
 function Customize() {
   const {
@@ -11,38 +12,51 @@ function Customize() {
     selectedTheme,
     customizations,
     setCustomizations,
-    setSelectedKit,
-    setSelectedTheme,
   } = useContext(AppContext);
 
-  const [zoom, setZoom] = useState(config.personalizacao.zoom.default); // Usando o valor padrão do zoom do config
-  const [errors, setErrors] = useState({}); // Estado para armazenar erros de validação
-  const [openSnackbar, setOpenSnackbar] = useState(false); // Estado para controlar o Snackbar
+  const [zoom, setZoom] = useState(config.personalizacao.zoom.default);
+  const [errors, setErrors] = useState({});
+  const [openSnackbar, setOpenSnackbar] = useState(false);
   const navigate = useNavigate();
+
+  // Função para atualizar a cor da fonte
+  const handleCorFonteChange = (hexColor, cmykValues) => {
+    setCustomizations({
+      ...customizations,
+      textColor: hexColor,
+      cmykFonte: cmykValues, // Atualiza o estado com os valores CMYK
+    });
+  };
+
+  // Função para atualizar a cor do fundo
+  const handleCorFundoChange = (hexColor, cmykValues) => {
+    setCustomizations({
+      ...customizations,
+      corFundo: hexColor,
+      cmykFundo: cmykValues, // Atualiza o estado com os valores CMYK
+    });
+  };
 
   // Função para validar os campos
   const validateFields = () => {
     const newErrors = {};
 
-    // Validação do campo Nome
     if (config.personalizacao.campos.nome.obrigatorio && !customizations.nome) {
       newErrors.nome = config.personalizacao.campos.nome.mensagemErro;
     } else if (customizations.nome && customizations.nome.length > config.personalizacao.campos.nome.maxCaracteres) {
       newErrors.nome = config.personalizacao.campos.nome.mensagemErro;
     }
 
-    // Validação do campo Complemento
     if (customizations.complemento && customizations.complemento.length > config.personalizacao.campos.complemento.maxCaracteres) {
       newErrors.complemento = config.personalizacao.campos.complemento.mensagemErro;
     }
 
-    // Validação do campo Turma
     if (customizations.turma && customizations.turma.length > config.personalizacao.campos.turma.maxCaracteres) {
       newErrors.turma = config.personalizacao.campos.turma.mensagemErro;
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0; // Retorna true se não houver erros
+    return Object.keys(newErrors).length === 0;
   };
 
   // Função para lidar com a mudança nos campos
@@ -50,7 +64,6 @@ function Customize() {
     const { name, value } = e.target;
     setCustomizations({ ...customizations, [name]: value });
 
-    // Validação em tempo real
     if (errors[name]) {
       validateFields();
     }
@@ -62,8 +75,11 @@ function Customize() {
       nome: '',
       complemento: '',
       turma: '',
-      fontFamily: config.personalizacao.fontesDisponiveis.Roboto, // Fonte padrão
-      textColor: '#000000',
+      fontFamily: config.personalizacao.fontesDisponiveis.Roboto,
+      textColor: config.personalizacao.corFontePadrao, // Cor de fonte padrão
+      corFundo: config.personalizacao.corFundoPadrao, // Cor de fundo padrão
+      cmykFonte: { c: 0, m: 0, y: 0, k: 0 }, // CMYK da fonte padrão
+      cmykFundo: { c: 100, m: 100, y: 0, k: 50 }, // CMYK do fundo padrão
     });
     setZoom(config.personalizacao.zoom.default);
     setErrors({});
@@ -71,29 +87,22 @@ function Customize() {
 
   // Função para ajustar dinamicamente o tamanho da fonte
   const calculateFontSize = (text, maxWidthCm, tipo) => {
-    const baseSizePx = 30; // Tamanho máximo da fonte em pixels
-    const minSizePx = 10; // Tamanho mínimo da fonte em pixels
-    const maxLength = 20; // Limite de caracteres
+    const baseSizePx = 30;
+    const minSizePx = 10;
+    const maxLength = 20;
+    const maxWidthPx = maxWidthCm * 37.8;
 
-    // Converte a largura máxima de centímetros para pixels
-    const maxWidthPx = maxWidthCm * 37.8; // 1cm = 37.8 pixels
+    const fontSizeBasedOnLength = baseSizePx * (maxLength / (text.length + 5));
+    const fontSizeBasedOnWidth = (maxWidthPx / maxLength) * 1.8;
 
-    // Calcula o tamanho da fonte com base no número de caracteres
-    const fontSizeBasedOnLength = baseSizePx * (maxLength / (text.length + 5)); // Ajuste para evitar tamanho inicial muito grande
-
-    // Calcula o tamanho da fonte com base no espaço disponível
-    const fontSizeBasedOnWidth = (maxWidthPx / maxLength) * 1.8; // Aumentamos o multiplicador para 1.8
-
-    // Para etiquetas redondas, ajustamos o cálculo para considerar o formato circular
     if (tipo === 'redonda') {
-      const areaRadiusPx = maxWidthPx / 2; // Raio da área delimitada em pixels
-      const fontSizeBasedOnCircle = (areaRadiusPx / Math.sqrt(text.length)) * 2.0; // Ajuste para o formato circular
+      const areaRadiusPx = maxWidthPx / 2;
+      const fontSizeBasedOnCircle = (areaRadiusPx / Math.sqrt(text.length)) * 2.0;
       return Math.min(Math.max(fontSizeBasedOnCircle, minSizePx), baseSizePx);
     }
 
-    // Retorna o menor valor entre os dois cálculos, respeitando os limites mínimo e máximo
     const finalFontSize = Math.min(fontSizeBasedOnLength, fontSizeBasedOnWidth);
-    return Math.max(finalFontSize, minSizePx); // Garante que o tamanho não seja menor que minSizePx
+    return Math.max(finalFontSize, minSizePx);
   };
 
   // Função para finalizar a personalização
@@ -101,7 +110,7 @@ function Customize() {
     if (validateFields()) {
       navigate('/checkout');
     } else {
-      setOpenSnackbar(true); // Exibe o Snackbar se houver erros
+      setOpenSnackbar(true);
     }
   };
 
@@ -118,7 +127,7 @@ function Customize() {
           variant="contained"
           color="primary"
           onClick={handleFinalizar}
-          disabled={!customizations.nome} // Desabilita o botão se o campo Nome não estiver preenchido
+          disabled={!customizations.nome}
         >
           Finalizar
         </Button>
@@ -135,7 +144,7 @@ function Customize() {
         >
           <Avatar
             src={selectedKit?.thumbnail}
-            sx={{ width: 110, height: 110, margin: '0 auto' }} // Reduzido em 15%
+            sx={{ width: 110, height: 110, margin: '0 auto' }}
           />
           <Typography
             variant="body1"
@@ -161,7 +170,7 @@ function Customize() {
         >
           <Avatar
             src={selectedTheme?.thumbnail}
-            sx={{ width: 110, height: 110, margin: '0 auto' }} // Reduzido em 15%
+            sx={{ width: 110, height: 110, margin: '0 auto' }}
           />
           <Typography
             variant="body1"
@@ -225,6 +234,36 @@ function Customize() {
               />
             </CardContent>
           </Card>
+
+          {/* Seletor de Cor da Fonte */}
+          <Card sx={{ mt: 4 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Cor da Fonte</Typography>
+              <CmykColorPicker
+                selectedColor={customizations.textColor}
+                onColorSelect={handleCorFonteChange}
+              />
+              <Typography variant="body2" mt={2}>
+                CMYK: {customizations.cmykFonte ? `${customizations.cmykFonte.c}%, ${customizations.cmykFonte.m}%, ${customizations.cmykFonte.y}%, ${customizations.cmykFonte.k}%` : "0%, 0%, 0%, 0%"}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* Seletor de Cor do Fundo */}
+          <Card sx={{ mt: 4 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Cor do Fundo</Typography>
+              <CmykColorPicker
+                selectedColor={customizations.corFundo}
+                onColorSelect={handleCorFundoChange}
+              />
+              <Typography variant="body2" mt={2}>
+                CMYK: {customizations.cmykFundo ? `${customizations.cmykFundo.c}%, ${customizations.cmykFundo.m}%, ${customizations.cmykFundo.y}%, ${customizations.cmykFundo.k}%` : "100%, 100%, 0%, 50%"}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* Seletor de Zoom */}
           <Card sx={{ mt: 4 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>Zoom</Typography>
@@ -237,36 +276,6 @@ function Customize() {
                 aria-labelledby="zoom-slider"
                 valueLabelDisplay="auto"
               />
-            </CardContent>
-          </Card>
-          <Card sx={{ mt: 4 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Selecione a Fonte *</Typography>
-              <Box display="flex" flexWrap="wrap" gap={2}>
-                {Object.entries(config.personalizacao.fontesDisponiveis).map(([nome, fonte]) => (
-                  <Box
-                    key={nome}
-                    onClick={() => setCustomizations({ ...customizations, fontFamily: fonte })}
-                    sx={{
-                      cursor: 'pointer',
-                      border: customizations.fontFamily === fonte ? '3px solid #4CAF50' : '1px solid #ccc',
-                      borderRadius: '10px',
-                      padding: '10px',
-                      transition: 'transform 0.2s, border-color 0.2s, box-shadow 0.2s',
-                      boxShadow: customizations.fontFamily === fonte ? '0 8px 30px rgba(76, 175, 80, 0.5)' : 'none',
-                      '&:hover': {
-                        transform: 'scale(1.05)',
-                        borderColor: '#4CAF50',
-                        boxShadow: '0 8px 30px rgba(76, 175, 80, 0.5)',
-                      },
-                    }}
-                  >
-                    <Typography fontFamily={fonte} fontSize={20}>
-                      Estilo de letra
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
             </CardContent>
           </Card>
         </Grid>
@@ -282,7 +291,7 @@ function Customize() {
                   theme={selectedTheme}
                   customizations={customizations}
                   zoom={zoom}
-                  calculateFontSize={calculateFontSize} // Passa a função de ajuste de fonte
+                  calculateFontSize={calculateFontSize}
                 />
               )}
             </CardContent>

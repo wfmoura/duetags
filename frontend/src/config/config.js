@@ -33,6 +33,20 @@ export const config = {
         Borel: "'Borel-Regular', cursive",
         KomikaAxis: "'KomikaAxis', sans-serif",
       },
+      "personagem": true,
+      "fundo": true,
+      tamanhoPersonagem: {
+        min: {
+          width: 50, // Largura mínima em pixels
+          height: 50, // Altura mínima em pixels
+        },
+        max: {
+          width: 200, // Largura máxima em pixels
+          height: 200, // Altura máxima em pixels
+        },
+      },
+      corFundoPadrao: "#000080", // Azul Marinho como cor padrão (CMYK: 100, 100, 0, 50)
+      corFontePadrao: "#FFFFFF", // Branco como cor padrão da fonte (CMYK: 0, 0, 0, 0)
     },
   
     // URLs ou caminhos para os arquivos JSON locais

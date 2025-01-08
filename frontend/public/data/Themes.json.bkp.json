@@ -1,0 +1,58 @@
+{
+  "temas": [
+    {
+      "id": "lol",
+      "nome": "LOL",
+      "thumbnail": "images/lol/thumbnail.png",
+      "caminho_img": {
+        "mini": "images/lol/mini.png",
+        "pequena": "images/lol/pequena.png",
+        "intermediaria": "images/lol/intermediaria.png",
+        "grande": "images/lol/grande.png",
+        "redonda": "images/lol/redonda.png",
+        "termocolante": "images/lol/termocolante.png"
+      }
+    },
+    {
+      "id": "espaco",
+      "nome": "Espaço",
+      "thumbnail": "images/espaco/thumbnail.png",
+      "caminho_img": {
+        "mini": "images/espaco/mini.png",
+        "pequena": "images/espaco/pequena.png",
+        "intermediaria": "images/unicornio/intermediaria.png",
+        "grande": "images/espaco/grande.png",
+        "redonda": "images/espaco/redonda.png",
+        "termocolante": "images/espaco/termocolante.png"
+      }
+    },
+    {
+      "id": "animais",
+      "nome": "Animais",
+      "thumbnail": "images/animais/thumbnail.png",
+      "caminho_img": {
+        "mini": "images/animais/mini.png",
+        "pequena": "images/animais/pequena.png",
+        "intermediaria": "images/animais/intermediaria.png",
+        "grande": "images/animais/grande.png",
+        "redonda": "images/animais/redonda.png",
+        "termocolante": "images/animais/termocolante.png"
+      }
+    }
+    {
+      "id": "personalizado",
+      "nome": "Personalizado",
+      "thumbnail": "images/personalizado/thumbnail.png",
+      "caminho_img": {
+        "mini": "images/personalizado/mini.png",
+        "pequena": "images/personalizado/pequena.png",
+        "intermediaria": "images/personalizado/intermediaria.png",
+        "grande": "images/personalizado/grande.png",
+        "redonda": "images/personalizado/redonda.png",
+        "termocolante": "images/personalizado/termocolante.png"
+      }
+    }
+
+
+  ]
+}
