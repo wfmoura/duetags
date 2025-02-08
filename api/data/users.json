@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "email": "usuario@exemplo.com",
+    "password": "$2b$10$CSG47fpsWeN9TKQZ08C3xej1m8HLKxB46cvJ1Z0MV6PdL63yTeMo."
+  },
+  {
+    "id": 2,
+    "email": "wdayane@gmail.com",
+    "nome": "Dayane Moura",
+    "celular": "(61) 98499-2828",
+    "dataNascimento": "01/01/1980",
+    "contatoWhatsApp": true,
+    "password": "$2b$10$U7XhGpUFh/pZcgOuYDfOXus7fv4jiTz9vpJFu3K5WlbRxWMh1hgUa"
+  }
+]

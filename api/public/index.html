@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Testes API</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #output {
+      background-color: #f4f4f4;
+      padding: 10px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>Testes API</h1>
+  <button id="runTests">Executar Testes</button>
+  <div id="output"></div>
+
+  <script>
+    document.getElementById('runTests').addEventListener('click', async () => {
+      const outputDiv = document.getElementById('output');
+      outputDiv.textContent = 'Executando testes...';
+
+      try {
+        const response = await fetch('/run-tests', {
+          method: 'POST',
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          outputDiv.textContent = result.output;
+        } else {
+          outputDiv.textContent = `Erro: ${result.error}`;
+        }
+      } catch (error) {
+        outputDiv.textContent = `Erro ao executar testes: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
