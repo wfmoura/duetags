@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules/*
+node_modules
 /backend/*
 /.pnp
 .pnp.js
@@ -18,7 +18,20 @@
 .env.development.local
 .env.test.local
 .env.production.local
-
+frontend/build 
+frontend 3
+frontend 4
+frontend 5*
+frontend 6
+frontend 7
+*cache*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+links
+api/build
+frontend/build
+frontend/node_modules
+api/node_modules
+*.jpg
+*.png

@@ -1,0 +1,317 @@
+Todas Kits e suas etiquetas
+
+SELECT 
+    k.id AS kit_id,
+    k.nome AS kit_nome,
+    k.thumbnail,
+    k.preco,
+    ke.etiqueta_id,
+    e.nome AS etiqueta_nome,
+    ke.quantidade
+FROM 
+    kits k
+JOIN 
+    kit_etiquetas ke ON k.id = ke.kit_id
+JOIN 
+    etiquetas e ON ke.etiqueta_id = e.id;
+
+
+-- Tabela de usuários
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    role VARCHAR(20) DEFAULT 'customer'
+);
+
+-- Tabela de produtos
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    price NUMERIC(10,2) NOT NULL,
+    thumbnail_url VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de pedidos
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    total_amount NUMERIC(10,2) NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de itens do pedido
+CREATE TABLE order_items (
+    id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(id) ON DELETE CASCADE,
+    product_id INT REFERENCES products(id) ON DELETE SET NULL,
+    quantity INTEGER NOT NULL,
+    unit_price NUMERIC(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de pagamentos
+CREATE TABLE payments (
+    id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(id) ON DELETE CASCADE,
+    payment_method VARCHAR(50) NOT NULL,
+    amount NUMERIC(10,2) NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    transaction_id VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de entregas
+CREATE TABLE shippings (
+    id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(id) ON DELETE CASCADE,
+    tracking_code VARCHAR(100),
+    carrier VARCHAR(100),
+    status VARCHAR(50) DEFAULT 'processing',
+    estimated_delivery TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de personalizações
+CREATE TABLE customizations (
+    id SERIAL PRIMARY KEY,
+    order_item_id INT REFERENCES order_items(id) ON DELETE CASCADE,
+    text VARCHAR(255),
+    font VARCHAR(100),
+    color VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de métodos de frete
+CREATE TABLE shipping_methods (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price NUMERIC(10, 2) NOT NULL,
+    estimated_delivery_days INT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de frete associado ao pedido
+CREATE TABLE order_shipping (
+    id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(id) ON DELETE CASCADE,
+    shipping_method_id INT REFERENCES shipping_methods(id) ON DELETE SET NULL,
+    price NUMERIC(10, 2) NOT NULL,
+    tracking_code VARCHAR(255),
+    status VARCHAR(50),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de avaliações e comentários
+CREATE TABLE reviews (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    product_id INT REFERENCES products(id) ON DELETE CASCADE,
+    rating INT CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de cupons de desconto
+CREATE TABLE coupons (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    discount_type VARCHAR(20) CHECK (discount_type IN ('percentage', 'fixed')),
+    discount_value NUMERIC(10, 2) NOT NULL,
+    valid_from TIMESTAMP,
+    valid_until TIMESTAMP,
+    max_uses INT,
+    uses INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de cupons aplicados a pedidos
+CREATE TABLE order_coupons (
+    id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(id) ON DELETE CASCADE,
+    coupon_id INT REFERENCES coupons(id) ON DELETE SET NULL,
+    discount_applied NUMERIC(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de pontos de fidelidade
+CREATE TABLE fidelity_points (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    points INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de recompensas de fidelidade
+CREATE TABLE fidelity_rewards (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    points_required INT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de recompensas resgatadas por usuários
+CREATE TABLE user_rewards (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    reward_id INT REFERENCES fidelity_rewards(id) ON DELETE CASCADE,
+    redeemed_at TIMESTAMP DEFAULT NOW(),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de preferências do usuário
+CREATE TABLE user_preferences (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    preferred_categories JSONB,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de recomendações de produtos
+CREATE TABLE product_recommendations (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    product_id INT REFERENCES products(id) ON DELETE CASCADE,
+    score NUMERIC(10, 2),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabela de configurações de módulos
+CREATE TABLE module_settings (
+    id SERIAL PRIMARY KEY,
+    module_name VARCHAR(50) UNIQUE NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Inserir módulos padrão
+INSERT INTO module_settings (module_name, is_active) VALUES
+('shipping', TRUE),
+('reviews', TRUE),
+('coupons', TRUE),
+('fidelity', TRUE),
+('recommendations', TRUE);
+
+-- Criação da tabela 'etiquetas'
+CREATE TABLE etiquetas (
+    id VARCHAR(50) PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    width NUMERIC(10, 2) NOT NULL,
+    height NUMERIC(10, 2) NOT NULL,
+    tipo VARCHAR(50) NOT NULL,
+    area_delimitada_left NUMERIC(10, 2),
+    area_delimitada_top NUMERIC(10, 2),
+    area_delimitada_width NUMERIC(10, 2),
+    area_delimitada_height NUMERIC(10, 2),
+    campos JSONB,
+    campos_mesclados JSONB,
+    imagem BOOLEAN,
+    max_font_size_nome INT,
+    max_font_size_complemento INT,
+    max_font_size_turma INT,
+    proporcao_personagem NUMERIC(10, 2),
+    distancia_do_rodape NUMERIC(10, 2)
+);
+
+-- Inserção dos dados na tabela 'etiquetas'
+INSERT INTO etiquetas (
+    id, nome, width, height, tipo, 
+    area_delimitada_left, area_delimitada_top, area_delimitada_width, area_delimitada_height,
+    campos, campos_mesclados, imagem, 
+    max_font_size_nome, max_font_size_complemento, max_font_size_turma,
+    proporcao_personagem, distancia_do_rodape
+) VALUES 
+    ('mini', 'Mini', 3.0, 1.5, 'Mini', 0, 0, 3.0, 1.5, '["nome", "complemento"]', '[]', FALSE, 15, 15, 10, 0.6, NULL),
+    ('grande', 'Grande', 8.0, 4.0, 'Grande', 2.9, 0.3, 4.5, 3.2, '["nome", "complemento", "turma"]', '[]', TRUE, 35, 35, 15, 0.8, NULL),
+    ('pequena', 'Pequena', 5.0, 1.0, 'Pequena', 1.15, 0.1, 3.6, 0.8, '["nome", "complemento"]', '["nome", "complemento"]', TRUE, 20, 15, 10, 0.6, 0.5),
+    ('intermediaria', 'Intermediária', 6.0, 2.5, 'Intermediária', 1.8, 0.2, 3.9, 2.1, '["nome", "complemento"]', '[]', TRUE, 22, 18, 12, 0.8, NULL),
+    ('redonda', 'Redonda', 2.5, 2.5, 'redonda', 0.2, 0.2, 2.1, 2.1, '["nome", "complemento"]', '[]', TRUE, 40, 15, 10, 0.3, NULL),
+    ('termocolante', 'Termocolante para Roupas', 6.0, 1.5, 'Termocolante para Roupas', 1, 0.1, 4.0, 1.3, '["nome"]', '[]', TRUE, 20, 15, 10, 0.7, NULL);
+
+-- Criação da tabela 'kits' com o campo 'preco' como NUMERIC(10, 2)
+CREATE TABLE kits (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    thumbnail VARCHAR(255),
+    preco NUMERIC(10, 2) NOT NULL
+);
+
+ALTER TABLE orders
+ADD COLUMN kit_id INT REFERENCES kits(id) ON DELETE SET NULL;
+
+CREATE TABLE order_labels (
+    id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(id) ON DELETE CASCADE,
+    label_url VARCHAR(255) NOT NULL,
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- Inserção dos dados na tabela 'kits' com valores monetários corretos
+INSERT INTO kits (id, nome, thumbnail, preco)
+VALUES 
+    (1, 'Kit 1', 'images/kits/kit1.jpg', 60.00),
+    (2, 'Kit 2', 'images/kits/kit2.jpg', 60.00),
+    (3, 'Kit 3', 'images/kits/kit3.jpg', 40.00),
+    (4, 'KIT 4', 'images/kits/kit4.jpg', 40.00),
+    (5, 'KIT 5', 'images/kits/kit5.jpg', 40.00);
+
+-- Criação da tabela 'kit_etiquetas'
+CREATE TABLE kit_etiquetas (
+    kit_id INT REFERENCES kits(id) ON DELETE CASCADE,
+    etiqueta_id VARCHAR(50) REFERENCES etiquetas(id) ON DELETE CASCADE,
+    quantidade INT NOT NULL,
+    PRIMARY KEY (kit_id, etiqueta_id)
+);
+
+-- Inserção dos dados na tabela 'kit_etiquetas'
+INSERT INTO kit_etiquetas (kit_id, etiqueta_id, quantidade)
+VALUES 
+    (1, 'grande', 20),
+    (1, 'pequena', 50),
+    (2, 'grande', 10),
+    (2, 'intermediaria', 9),
+    (2, 'redonda', 20),
+    (2, 'pequena', 20),
+    (2, 'mini', 12),
+    (3, 'pequena', 50),
+    (3, 'mini', 20),
+    (3, 'redonda', 8),
+    (4, 'intermediaria', 20),
+    (5, 'termocolante', 20);
+
+
+
+-- Adicionar campo 'enviado_para_producao' na tabela 'orders'
+ALTER TABLE orders
+ADD COLUMN enviado_para_producao BOOLEAN DEFAULT FALSE;
+
+-- Adicionar campo 'imagem' na tabela 'order_etiquetas'
+ALTER TABLE order_etiquetas
+ADD COLUMN imagem TEXT;
+
+-- Remover campo 'imagem_url' da tabela 'order_etiquetas'
+ALTER TABLE order_etiquetas
+DROP COLUMN imagem_url;

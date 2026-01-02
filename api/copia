@@ -1,6 +1,0 @@
-#!/bin/bash
-echo "Apagando os arquivos antigos!!!"
-rm /Users/williammoura/Desenv/duetags/links-api/*.*
-echo "Copiando arquivos atuais de agora!!!"
-find . |egrep -v "backup|post|node|fonts|images|Store|bkp|old|2024|outros|salvas" |egrep "js|css" |egrep "js|css" | xargs -I{} cp {} /Users/williammoura/Desenv/duetags/links-api/
-echo "Arquivos copiados. Boa diversão"

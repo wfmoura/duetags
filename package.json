@@ -1,0 +1,11 @@
+{
+  "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^7.25.9"
+  },
+  "dependencies": {
+    "backend": "^0.0.0",
+    "sharp": "^0.31.3"
+  }
+  
+
+}
