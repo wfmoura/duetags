@@ -2,8 +2,8 @@
 export const config = {
   // Configurações de personalização de etiquetas
   supabase: {
-    url: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || (typeof process !== 'undefined' && process.env?.REACT_APP_SUPABASE_URL) || "https://gwptcsxlpcqhijodyeaq.supabase.co",
-    key: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_KEY) || (typeof process !== 'undefined' && process.env?.REACT_APP_SUPABASE_KEY) || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cHRjc3hscGNxaGlqb2R5ZWFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2NjA1MDgsImV4cCI6MjA4MTIzNjUwOH0.unY30UgwLs0gYbrFK3Qi4HKQWQfzB0zTBz72Z3xrv-M",
+    url: import.meta.env.VITE_SUPABASE_URL || "https://gwptcsxlpcqhijodyeaq.supabase.co",
+    key: import.meta.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cHRjc3hscGNxaGlqb2R5ZWFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2NjA1MDgsImV4cCI6MjA4MTIzNjUwOH0.unY30UgwLs0gYbrFK3Qi4HKQWQfzB0zTBz72Z3xrv-M",
   },
   ai: {
     apiKey: "AIzaSyCmJ0iQ5W9nDmTp7foaeJFf9GhHoAw6mxk", // Gemini API Key
