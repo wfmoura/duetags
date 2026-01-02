@@ -696,7 +696,8 @@ const OrderPage = () => {
             {/* Footer Navigation */}
             <Box sx={{ textAlign: 'center', mt: 4, mb: 8 }}>
                 <Button variant="text" onClick={() => navigate('/')}>
-                    Voltar para a Página Inicial
+                    Criar Nova Etiqueta
+
                 </Button>
             </Box>
         </Box>
