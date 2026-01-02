@@ -3,10 +3,10 @@ export const config = {
   // Configurações de personalização de etiquetas
   supabase: {
     url: import.meta.env.VITE_SUPABASE_URL || "https://gwptcsxlpcqhijodyeaq.supabase.co",
-    key: import.meta.env.VITE_SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cHRjc3hscGNxaGlqb2R5ZWFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2NjA1MDgsImV4cCI6MjA4MTIzNjUwOH0.unY30UgwLs0gYbrFK3Qi4HKQWQfzB0zTBz72Z3xrv-M",
+    key: import.meta.env.VITE_SUPABASE_KEY,
   },
   ai: {
-    apiKey: "AIzaSyCmJ0iQ5W9nDmTp7foaeJFf9GhHoAw6mxk", // Gemini API Key
+    apiKey: import.meta.env.VITE_GEMINI_API_KEY, // Gemini API Key
     corFundo: "#E3F2FD", // Default background color for AI, matching corFundoPadrao
     cmykFonte: { c: 0, m: 0, y: 0, k: 0 },
     cmykFundo: { c: 0, m: 0, y: 0, k: 0 },

@@ -1,11 +1,11 @@
 const https = require('https');
 
-const apiKey = "AIzaSyDfn699IYdHegHXgOm4sBnJe62OhSbDdPo";
+const apiKey = process.env.GOOGLE_API_KEY;
 
 function testModel(modelName) {
     console.log(`Testing model: ${modelName}`);
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-    
+
     const data = JSON.stringify({
         contents: [{
             parts: [{
@@ -30,17 +30,17 @@ function testModel(modelName) {
             try {
                 const json = JSON.parse(responseBody);
                 if (res.statusCode === 200) {
-                     // Check if we got image data
-                     if (json.candidates && json.candidates[0].content && json.candidates[0].content.parts) {
-                         const parts = json.candidates[0].content.parts;
-                         const hasImage = parts.some(p => p.inlineData || p.fileData);
-                         console.log("Has Image data:", hasImage);
-                         if (!hasImage) {
-                             console.log("Returned text instead:", parts[0].text);
-                         }
-                     } else {
-                         console.log("Unexpected structure:", JSON.stringify(json, null, 2));
-                     }
+                    // Check if we got image data
+                    if (json.candidates && json.candidates[0].content && json.candidates[0].content.parts) {
+                        const parts = json.candidates[0].content.parts;
+                        const hasImage = parts.some(p => p.inlineData || p.fileData);
+                        console.log("Has Image data:", hasImage);
+                        if (!hasImage) {
+                            console.log("Returned text instead:", parts[0].text);
+                        }
+                    } else {
+                        console.log("Unexpected structure:", JSON.stringify(json, null, 2));
+                    }
                 } else {
                     console.log("Error:", JSON.stringify(json, null, 2));
                 }

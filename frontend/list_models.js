@@ -1,6 +1,6 @@
 const https = require('https');
 
-const apiKey = "AIzaSyDfn699IYdHegHXgOm4sBnJe62OhSbDdPo";
+const apiKey = process.env.GOOGLE_API_KEY;
 const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
 
 https.get(url, (res) => {
@@ -14,8 +14,8 @@ https.get(url, (res) => {
       if (json.models) {
         console.log("Available Models:");
         json.models.forEach(model => {
-            console.log(`- ${model.name}`);
-            console.log(`  Supported methods: ${model.supportedGenerationMethods}`);
+          console.log(`- ${model.name}`);
+          console.log(`  Supported methods: ${model.supportedGenerationMethods}`);
         });
       } else {
         console.log("No models found or error:", json);
