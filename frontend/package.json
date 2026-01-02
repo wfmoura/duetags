@@ -1,31 +1,96 @@
 {
-  "name": "etiquetas-personalizadas",
-  "version": "0.1.0",
+  "name": "duetags",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@mui/icons-material": "^6.3.0",
-    "@mui/material": "^6.3.1",
+    "@mui/icons-material": "^6.4.0",
+    "@mui/material": "^6.4.0",
+    "@supabase/supabase-js": "^2.87.1",
+    "antd": "^5.23.0",
+    "assert": "^2.1.0",
+    "axios": "^1.7.9",
+    "babel-jest": "^29.7.0",
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "cra-template": "1.2.0",
+    "craco": "^0.0.3",
+    "crypto-browserify": "^3.12.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
     "file-saver": "^2.0.5",
-    "html2canvas": "^1.4.1",
+    "firebase": "^11.2.0",
+    "formik": "^2.4.6",
+    "framer-motion": "^11.18.0",
+    "fs": "^0.0.1-security",
+    "https-browserify": "^1.0.0",
+    "jsonwebtoken": "^9.0.2",
     "jspdf": "^2.5.2",
+    "jszip": "^3.10.1",
+    "jwt-decode": "^4.0.0",
+    "mercadopago": "^2.3.0",
+    "nodemailer": "^6.9.16",
+    "notistack": "^3.0.2",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "pngjs": "^7.0.0",
     "react": "^19.0.0",
+    "react-app-rewired": "^2.2.1",
+    "react-color": "^2.19.3",
+    "react-colorful": "^5.6.1",
     "react-dom": "^19.0.0",
+    "react-imask": "^7.6.1",
+    "react-input-mask": "^2.0.4",
     "react-rnd": "^10.4.14",
     "react-router-dom": "^7.1.1",
     "react-scripts": "^5.0.1",
+    "recharts": "^2.15.1",
+    "socket.io-client": "^4.8.1",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
     "styled-components": "^6.1.13",
-    "webfontloader": "^1.6.28"
+    "tinycolor2": "^1.6.0",
+    "url": "^0.11.4",
+    "webfontloader": "^1.6.28",
+    "yup": "^1.6.1"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^7.25.9",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.4.20",
+    "html2canvas": "^1.4.1",
+    "jest": "^27.5.1",
+    "jest-fetch-mock": "^3.0.3",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.4.1",
+    "vite-plugin-svgr": "^4.5.0"
   },
   "scripts": {
     "generate-imports": "node generateImports.js",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "dev": "vite",
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
+  "browserscript": {
+    "node": {
+      "plugins": [
+        "@babel/plugin-proposal-decorators",
+        {
+          "legacy": true
+        }
+      ]
+    }
+  },
+  "experimental": true,
   "eslintConfig": {
     "extends": [
       "react-app",
@@ -43,10 +108,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17"
   }
 }

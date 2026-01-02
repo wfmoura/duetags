@@ -1,0 +1,180 @@
+import React, { useState, useEffect, useContext } from "react";
+import {
+  Box,
+  Typography,
+  Button,
+  Container,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Paper,
+  CircularProgress,
+  Link,
+  IconButton,
+  Collapse,
+  Grid,
+  Card,
+  CardContent,
+} from "@mui/material";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import { AppContext } from "../contexts/AppContext";
+import api from "../api";
+import { useNavigate } from "react-router-dom";
+
+function OrderRow({ order }) {
+  const [open, setOpen] = useState(false);
+
+  // Função para baixar o ZIP com todas as imagens do pedido/kit.
+  const downloadZip = (orderId) => {
+    window.open(
+      `${process.env.REACT_APP_API_BASE_URL}/api/orders/${orderId}/labels/zip`,
+      "_blank"
+    );
+  };
+
+  return (
+    <>
+      <TableRow>
+        <TableCell>
+          <IconButton size="small" onClick={() => setOpen(!open)}>
+            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </IconButton>
+        </TableCell>
+        <TableCell>{order.id}</TableCell>
+        <TableCell>{order.userName || "N/D"}</TableCell>
+        <TableCell>{order.kitName || "N/D"}</TableCell>
+        <TableCell>
+          {order.created_at
+            ? new Date(order.created_at).toLocaleString()
+            : "N/D"}
+        </TableCell>
+        <TableCell>{order.status || "N/D"}</TableCell>
+        <TableCell>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            startIcon={<FileDownloadIcon />}
+            onClick={() => downloadZip(order.id)}
+          >
+            Baixar ZIP
+          </Button>
+        </TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <Box margin={2}>
+              <Typography variant="subtitle1" gutterBottom>
+                Detalhes do Pedido
+              </Typography>
+              {order.labels && order.labels.length > 0 ? (
+                <Grid container spacing={2}>
+                  {order.labels.map((label, index) => (
+                    <Grid item key={index} xs={12} sm={6} md={4}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Typography variant="body2">
+                            {label.metadata?.nome || `Etiqueta ${index + 1}`}
+                          </Typography>
+                          <Link
+                            href={label.label_url}
+                            download
+                            target="_blank"
+                            rel="noopener"
+                            underline="hover"
+                            color="primary"
+                          >
+                            Baixar Imagem
+                          </Link>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <Typography variant="body2">Sem imagens</Typography>
+              )}
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
+  );
+}
+
+function Pedidos() {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const { token, user } = useContext(AppContext);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    async function fetchOrders() {
+      if (!token || !user?.id) return;
+
+      setLoading(true);
+      try {
+        const response = await api.get(`/api/orders?userId=${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.status === 401) {
+          console.error("Token expirado. Redirecionando para login...");
+          navigate("/login", { state: { from: "/pedidos" } });
+          return;
+        }
+
+        setOrders(response.data.data);
+      } catch (error) {
+        console.error("Erro ao buscar pedidos:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchOrders();
+  }, [token, user]);
+
+  return (
+    <Container sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Pedidos
+      </Typography>
+      {loading ? (
+        <Box display="flex" justifyContent="center" mt={4}>
+          <CircularProgress />
+        </Box>
+      ) : orders.length === 0 ? (
+        <Typography>Nenhum pedido encontrado.</Typography>
+      ) : (
+        <Paper sx={{ overflowX: "auto", mb: 4 }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell />
+                <TableCell>ID Pedido</TableCell>
+                <TableCell>Cliente</TableCell>
+                <TableCell>Kit Comprado</TableCell>
+                <TableCell>Data</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Ações</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {orders.map((order) => (
+                <OrderRow key={order.id} order={order} />
+              ))}
+            </TableBody>
+          </Table>
+        </Paper>
+      )}
+    </Container>
+  );
+}
+
+export default Pedidos;

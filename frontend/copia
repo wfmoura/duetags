@@ -1,0 +1,6 @@
+!/bin/bash
+echo "Apagando os arquivos antigos!!!"
+#rm /Users/williammoura/Desenv/links/*.*
+echo "Copiando arquivos atuais de agora!!!"
+find . | egrep "src|public" |egrep -v "backup|post|node|fonts|images|Store|bkp|old|2024|outros" |egrep "js|css" | xargs -I{} cp {} /Users/williammoura/Desenv/links/
+echo "Arquivos copiados. Boa diversão"

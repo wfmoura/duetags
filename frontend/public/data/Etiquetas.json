@@ -12,8 +12,15 @@
         "width": 3.0,
         "height": 1.5
       },
-      "campos": ["nome"],
-      "imagem": false
+      "campos": ["nome", "complemento"],
+      "camposMesclados": [], 
+      "imagem": false,
+      "maxFontSize": {
+        "nome": 15,
+        "complemento": 15,
+        "turma": 10
+      },
+      "proporcaoPersonagem": 0.6
     },
     {
       "id": "grande",
@@ -23,12 +30,19 @@
       "tipo": "Grande",
       "area_delimitada": {
         "left": 2.9,
-        "top": 0.7,
+        "top": 0.3,
         "width": 4.5,
-        "height": 2.5
+        "height": 3.2
       },
       "campos": ["nome", "complemento", "turma"],
-      "imagem": true
+      "camposMesclados": [], 
+      "imagem": true,
+      "maxFontSize": {
+        "nome": 35,
+        "complemento": 35,
+        "turma": 15
+      },
+      "proporcaoPersonagem": 0.8
     },
     {
       "id": "pequena",
@@ -42,15 +56,23 @@
         "width": 3.6,
         "height": 0.8
       },
-      "campos": ["nome"],
-      "imagem": true
+      "campos": ["nome", "complemento"],
+      "camposMesclados": ["nome", "complemento"], 
+      "imagem": true,
+      "maxFontSize": {
+        "nome": 20,
+        "complemento": 15,
+        "turma": 10
+      },
+      "proporcaoPersonagem": 0.6,
+      "distanciaDoRodape": 0.5
     },
     {
       "id": "intermediaria",
       "nome": "Intermediária",
       "width": 6.0,
       "height": 2.5,
-      "tipo": "Intermediária",
+      "tipo": "Intermediaria",
       "area_delimitada": {
         "left": 1.8,
         "top": 0.2,
@@ -58,29 +80,43 @@
         "height": 2.1
       },
       "campos": ["nome", "complemento"],
-      "imagem": true
+      "camposMesclados": [], 
+      "imagem": true,
+      "maxFontSize": {
+        "nome": 22,
+        "complemento": 18,
+        "turma": 12
+      },
+      "proporcaoPersonagem": 0.8
     },
     {
       "id": "redonda",
       "nome": "Redonda",
       "width": 2.5,
       "height": 2.5,
-      "tipo": "Redonda",
+      "tipo": "redonda",
       "area_delimitada": {
-        "left": 0.35,
-        "top": 0.4,
-        "width": 1.8,
-        "height": 1.0
+        "left": 0.2,
+        "top": 0.2,
+        "width": 2.1,
+        "height": 2.1
       },
-      "campos": ["nome"],
-      "imagem": false
+      "campos": ["nome", "complemento"],
+      "camposMesclados": [], 
+      "imagem": true,
+      "maxFontSize": {
+        "nome": 40,
+        "complemento": 15,
+        "turma": 10
+      },
+      "proporcaoPersonagem": 0.3
     },
     {
       "id": "termocolante",
       "nome": "Termocolante para Roupas",
       "width": 6.0,
       "height": 1.5,
-      "tipo": "Termocolante para Roupas",
+      "tipo": "Termocolante",
       "area_delimitada": {
         "left": 1,
         "top": 0.1,
@@ -88,7 +124,14 @@
         "height": 1.3
       },
       "campos": ["nome"],
-      "imagem": true
+      "camposMesclados": [], 
+      "imagem": true,
+      "maxFontSize": {
+        "nome": 20,
+        "complemento": 15,
+        "turma": 10
+      },
+      "proporcaoPersonagem": 0.7
     }
   ]
 }

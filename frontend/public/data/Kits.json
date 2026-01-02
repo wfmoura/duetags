@@ -12,7 +12,7 @@
     },
     {
       "id": 2,
-      "nome": "Espaço",
+      "nome": "Kit 2",
       "thumbnail": "images/kits/kit2.jpg",
       "etiquetas": [
         { "id": "grande", "quantidade": 10 },
@@ -25,7 +25,7 @@
     },
     {
       "id": 3,
-      "nome": "Floresta",
+      "nome": "Kit 3",
       "thumbnail": "images/kits/kit3.jpg",
       "etiquetas": [
         { "id": "pequena", "quantidade": 50 },
