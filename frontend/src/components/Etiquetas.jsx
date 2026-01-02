@@ -410,8 +410,8 @@ const EtiquetaItem = ({ etiqueta, theme, customizations, zoom, isExport, isCaptu
         )}
 
         <AreaDelimitada
-          $leftPx={(etiqueta.area_delimitada?.left || 0) * zoom * 37.8}
-          $topPx={(etiqueta.area_delimitada?.top || 0) * zoom * 37.8}
+          $leftPx={startXPx}
+          $topPx={startYPx}
           $widthPx={areaWidthPx}
           $heightPx={totalHeightPx}
           $tipo={etiqueta.tipo}
@@ -419,192 +419,192 @@ const EtiquetaItem = ({ etiqueta, theme, customizations, zoom, isExport, isCaptu
           $mostrarLinhaVermelha={config.personalizacao.mostrarLinhaVermelha}
           $showAreaBorder={customizations.showAreaBorder}
           style={{ pointerEvents: 'none' }}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (activeId) setActiveId(null);
-          }}
-        >
-          {(() => {
-            const fieldFontSizes = {};
-            let nomeCalculatedSize = 0;
+        />
 
-            activeFields.forEach(field => {
-              const isOverlappingHorizontally = (
-                personagemPosicao.y < (startYPx + totalHeightPx) &&
-                (personagemPosicao.y + personagemTamanho.height) > startYPx
-              );
+        {/* Textos movidos para fora da AreaDelimitada para permitir arrastar por toda a etiqueta */}
+        {activeFields.map((field, index) => {
+          // Re-calculate sizes for each field
+          const isOverlappingHorizontally = (
+            personagemPosicao.y < (startYPx + totalHeightPx) &&
+            (personagemPosicao.y + personagemTamanho.height) > startYPx
+          );
 
-              let currentAvailableWidthCm = areaWidthCm;
-              if (isOverlappingHorizontally) {
-                const safeOverlapMargin = 0.2; // 2mm safety
-                if (personagemPosicao.x < larguraEtiquetaPx / 2) {
-                  const occupiedWidthCm = (personagemPosicao.x + personagemTamanho.width) / (zoom * 37.8);
-                  currentAvailableWidthCm = Math.max(1, areaWidthCm - (occupiedWidthCm - (etiqueta.area_delimitada?.left || 0) + safeOverlapMargin));
-                } else {
-                  const occupiedStartCm = personagemPosicao.x / (zoom * 37.8);
-                  currentAvailableWidthCm = Math.max(1, (occupiedStartCm - (etiqueta.area_delimitada?.left || 0)) - safeOverlapMargin);
-                }
-              }
+          let currentAvailableWidthCm = areaWidthCm;
+          if (isOverlappingHorizontally) {
+            const safeOverlapMargin = 0.2;
+            if (personagemPosicao.x < larguraEtiquetaPx / 2) {
+              const occupiedWidthCm = (personagemPosicao.x + personagemTamanho.width) / (zoom * 37.8);
+              currentAvailableWidthCm = Math.max(1, areaWidthCm - (occupiedWidthCm - (etiqueta.area_delimitada?.left || 0) + safeOverlapMargin));
+            } else {
+              const occupiedStartCm = personagemPosicao.x / (zoom * 37.8);
+              currentAvailableWidthCm = Math.max(1, (occupiedStartCm - (etiqueta.area_delimitada?.left || 0)) - safeOverlapMargin);
+            }
+          }
 
-              // calculateFontSize now returns { fontSize, shouldWrap }
-              const result = calculateFontSize(
-                field.text,
+          const result = calculateFontSize(
+            field.text,
+            currentAvailableWidthCm,
+            totalHeightCm / (activeFields.length || 1),
+            field.fieldName || field.id,
+            etiqueta.maxFontSize?.[field.fieldName] || etiqueta[`max_font_size_${field.fieldName}`],
+            fontSizeScale,
+            etiqueta.escala_extra_fonte || 1,
+            etiqueta.tipo,
+            etiqueta.min_font_size_nome
+          );
+
+          let finalSize = result.fontSize * zoom;
+          let shouldWrap = result.shouldWrap;
+
+          // Sync with Name size for 'complemento' if needed
+          if (field.fieldName === 'complemento') {
+            const nomeField = activeFields.find(f => f.fieldName === 'nome');
+            if (nomeField) {
+              const nomeResult = calculateFontSize(
+                nomeField.text,
                 currentAvailableWidthCm,
                 totalHeightCm / (activeFields.length || 1),
-                field.fieldName || field.id,
-                etiqueta.maxFontSize?.[field.fieldName] || etiqueta[`max_font_size_${field.fieldName}`],
+                'nome',
+                etiqueta.maxFontSize?.nome || etiqueta.max_font_size_nome,
                 fontSizeScale,
                 etiqueta.escala_extra_fonte || 1,
                 etiqueta.tipo,
                 etiqueta.min_font_size_nome
               );
-
-              fieldFontSizes[field.id] = {
-                fontSize: result.fontSize * zoom,
-                shouldWrap: result.shouldWrap
-              };
-              if (field.fieldName === 'nome') nomeCalculatedSize = result.fontSize * zoom;
-            });
-
-            return activeFields.map((field, index) => {
-              let finalSize = fieldFontSizes[field.id].fontSize;
-              let shouldWrap = fieldFontSizes[field.id].shouldWrap;
-
-              if (field.fieldName === 'complemento' && nomeCalculatedSize > 0) {
-                if (field.text.length <= (nome?.length || 0)) {
-                  finalSize = nomeCalculatedSize;
-                } else {
-                  finalSize = Math.min(finalSize, nomeCalculatedSize);
-                }
+              const nomeCalculatedSize = nomeResult.fontSize * zoom;
+              if (field.text.length <= nomeField.text.length) {
+                finalSize = nomeCalculatedSize;
+              } else {
+                finalSize = Math.min(finalSize, nomeCalculatedSize);
               }
+            }
+          }
 
-              const currentFieldHeightCm = totalHeightCm / (activeFields.length || 1);
-              const isSmallArea = areaWidthCm < 3.0 || currentFieldHeightCm <= 1.1; // Includes Pequena and Mini
-              const charWidthRatio = isSmallArea ? 0.44 : 0.52;
-              const contentPadding = 20 / 1.5; // ~13.3px at scale 1:1
-              const spacingOffsetPx = (activeFields.length === 2 ? (Number(etiqueta.distancia_entre_linhas || 0) * zoom * 37.8) : 0);
+          const currentFieldHeightCm = totalHeightCm / (activeFields.length || 1);
+          const isSmallArea = areaWidthCm < 3.0 || currentFieldHeightCm <= 1.1;
+          const charWidthRatio = isSmallArea ? 0.44 : 0.52;
+          const contentPadding = 20 / 1.5;
+          const spacingOffsetPx = (activeFields.length === 2 ? (Number(etiqueta.distancia_entre_linhas || 0) * zoom * 37.8) : 0);
 
-              // Se shouldWrap for verdadeiro, forçamos a largura para a largura da área e centralizamos
-              let finalContentWidthPx = field.text.length * finalSize * charWidthRatio + (contentPadding * zoom);
-              let finalContentHeightPx = finalSize * 1.35;
-              let finalDefaultX = (areaWidthPx - finalContentWidthPx) / 2;
+          let finalContentWidthPx = field.text.length * finalSize * charWidthRatio + (contentPadding * zoom);
+          let finalContentHeightPx = finalSize * 1.35;
+          let finalDefaultXInArea = (areaWidthPx - finalContentWidthPx) / 2;
 
-              if (shouldWrap) {
-                finalContentWidthPx = areaWidthPx;
-                finalContentHeightPx = finalSize * 1.1 * 2; // Aproximação para 2 linhas (ou mais)
-                finalDefaultX = 0;
-              }
+          if (shouldWrap) {
+            finalContentWidthPx = areaWidthPx;
+            finalContentHeightPx = finalSize * 1.1 * 2;
+            finalDefaultXInArea = 0;
+          }
 
-              let defaultY = startYOffsetPx + (index * layoutHeightPx) + ((layoutHeightPx - finalContentHeightPx) / 2);
+          let defaultYInArea = startYOffsetPx + (index * layoutHeightPx) + ((layoutHeightPx - finalContentHeightPx) / 2);
 
-              // Apply custom spacing offset for 2-line layouts
-              if (activeFields.length === 2) {
-                if (index === 0) defaultY -= spacingOffsetPx / 2;
-                if (index === 1) defaultY += spacingOffsetPx / 2;
-              }
+          if (activeFields.length === 2) {
+            if (index === 0) defaultYInArea -= spacingOffsetPx / 2;
+            if (index === 1) defaultYInArea += spacingOffsetPx / 2;
+          }
 
-              const isFieldActive = activeId === field.id;
-              const currentState = fieldStates[field.id] || {
-                x: finalDefaultX,
-                y: defaultY,
-                width: finalContentWidthPx,
-                height: finalContentHeightPx
-              };
+          // Converter para coordenadas globais da etiqueta
+          const globalDefaultX = startXPx + finalDefaultXInArea;
+          const globalDefaultY = startYPx + defaultYInArea;
 
-              return (
-                <DraggableTextContainer
-                  key={field.id}
-                  className="draggable-text-layer"
-                  position={{ x: currentState.x, y: currentState.y }}
-                  size={{ width: currentState.width, height: currentState.height }}
-                  disableDragging={isExport}
-                  enableResizing={!isExport}
-                  bounds="parent"
-                  $showBorder={isFieldActive}
-                  style={{ pointerEvents: 'auto' }} // Permitir cliques apenas no campo
-                  onDragStart={(e) => {
-                    e.stopPropagation();
-                    handleInteraction();
-                    setActiveId(field.id);
-                  }}
-                  onDragStop={(e, d) => {
-                    handleInteraction();
-                    // Save in normalized space (relative to baseZoom)
-                    const normalizedState = {
-                      x: d.x / zoomScale,
-                      y: d.y / zoomScale,
-                      width: currentState.width / zoomScale,
-                      height: currentState.height / zoomScale
-                    };
-                    setFieldStates(prev => ({ ...prev, [field.id]: { ...currentState, x: d.x, y: d.y } }));
-                    if (onPositionChange) onPositionChange(field.id, normalizedState);
-                  }}
-                  onResizeStop={(e, direction, ref, delta, position) => {
-                    const normalizedState = {
-                      x: position.x / zoomScale,
-                      y: position.y / zoomScale,
-                      width: ref.offsetWidth / zoomScale,
-                      height: ref.offsetHeight / zoomScale
-                    };
-                    const localState = {
-                      x: position.x,
-                      y: position.y,
-                      width: ref.offsetWidth,
-                      height: ref.offsetHeight
-                    };
-                    setFieldStates(prev => ({ ...prev, [field.id]: localState }));
-                    if (onPositionChange) onPositionChange(field.id, normalizedState);
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleInteraction();
-                    toggleHighlight(field.id);
-                  }}
-                >
-                  <Box className="drag-handle-full" sx={{
+          const isFieldActive = activeId === field.id;
+          const currentState = fieldStates[field.id] || {
+            x: globalDefaultX,
+            y: globalDefaultY,
+            width: finalContentWidthPx,
+            height: finalContentHeightPx
+          };
+
+          return (
+            <DraggableTextContainer
+              key={field.id}
+              className="draggable-text-layer"
+              position={{ x: currentState.x, y: currentState.y }}
+              size={{ width: currentState.width, height: currentState.height }}
+              disableDragging={isExport}
+              enableResizing={!isExport}
+              bounds="parent"
+              $showBorder={isFieldActive}
+              style={{ pointerEvents: 'auto' }}
+              onDragStart={(e) => {
+                e.stopPropagation();
+                handleInteraction();
+                setActiveId(field.id);
+              }}
+              onDragStop={(e, d) => {
+                handleInteraction();
+                const normalizedState = {
+                  x: d.x / zoomScale,
+                  y: d.y / zoomScale,
+                  width: currentState.width / zoomScale,
+                  height: currentState.height / zoomScale
+                };
+                setFieldStates(prev => ({ ...prev, [field.id]: { ...currentState, x: d.x, y: d.y } }));
+                if (onPositionChange) onPositionChange(field.id, normalizedState);
+              }}
+              onResizeStop={(e, direction, ref, delta, position) => {
+                const normalizedState = {
+                  x: position.x / zoomScale,
+                  y: position.y / zoomScale,
+                  width: ref.offsetWidth / zoomScale,
+                  height: ref.offsetHeight / zoomScale
+                };
+                const localState = {
+                  x: position.x,
+                  y: position.y,
+                  width: ref.offsetWidth,
+                  height: ref.offsetHeight
+                };
+                setFieldStates(prev => ({ ...prev, [field.id]: localState }));
+                if (onPositionChange) onPositionChange(field.id, normalizedState);
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleInteraction();
+                toggleHighlight(field.id);
+              }}
+            >
+              <Box className="drag-handle-full" sx={{
+                position: 'absolute',
+                top: -5, left: -5, right: -5, bottom: -5,
+                zIndex: 2,
+                cursor: isExport ? 'default' : 'move',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                {isFieldActive && !isExport && (
+                  <OpenWithIcon sx={{
                     position: 'absolute',
-                    top: -5, left: -5, right: -5, bottom: -5,
-                    zIndex: 2,
-                    cursor: isExport ? 'default' : 'move',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    {isFieldActive && !isExport && (
-                      <OpenWithIcon sx={{
-                        position: 'absolute',
-                        top: -12,
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        color: 'primary.main',
-                        bgcolor: 'white',
-                        borderRadius: '50%',
-                        p: 0.3,
-                        fontSize: '0.9rem',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                        opacity: 0.9
-                      }} />
-                    )}
-                  </Box>
-                  <TextoContainer
-                    $fontSizePx={finalSize}
-                    $fontFamily={fontFamily}
-                    $textColor={customizations.textColor}
-                    $isBold={isBold}
-                    $isItalic={isItalic}
-                    $shouldWrap={shouldWrap}
-                    $showBorder={isFieldActive && !isExport}
-                    data-field-id={field.id}
-                    data-font-size={`${finalSize}px`}
-                  >
-                    {field.text}
-                  </TextoContainer>
-                </DraggableTextContainer>
-              );
-            });
-          })()}
-
-        </AreaDelimitada>
+                    top: -12,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    color: 'primary.main',
+                    bgcolor: 'white',
+                    borderRadius: '50%',
+                    p: 0.3,
+                    fontSize: '0.9rem',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    opacity: 0.9
+                  }} />
+                )}
+              </Box>
+              <TextoContainer
+                $fontSizePx={finalSize}
+                $fontFamily={fontFamily}
+                $textColor={customizations.textColor}
+                $isBold={isBold}
+                $isItalic={isItalic}
+                $shouldWrap={shouldWrap}
+                $showBorder={isFieldActive && !isExport}
+                data-field-id={field.id}
+                data-font-size={`${finalSize}px`}
+              >
+                {field.text}
+              </TextoContainer>
+            </DraggableTextContainer>
+          );
+        })}
 
         {config.personalizacao.personagem && theme?.thumbnail && etiqueta.imagem === true && !theme?.isAiBackground && (
           <Rnd
@@ -616,7 +616,7 @@ const EtiquetaItem = ({ etiqueta, theme, customizations, zoom, isExport, isCaptu
             }}
             size={{ width: personagemTamanho.width, height: personagemTamanho.height }}
             position={{ x: personagemPosicao.x, y: personagemPosicao.y }}
-            bounds="parent" // Now relative to EtiquetaContainer
+            bounds="parent"
             minWidth={tamanhoMinimo.width}
             minHeight={tamanhoMinimo.height}
             maxWidth={etiqueta.width * zoom * 37.8}
@@ -676,7 +676,7 @@ const EtiquetaItem = ({ etiqueta, theme, customizations, zoom, isExport, isCaptu
               backgroundPosition: 'center',
               boxShadow: (activeId === 'personagem' && !isExport) ? '0 4px 8px rgba(0, 0, 0, 0.2)' : 'none',
               border: (activeId === 'personagem' && !isExport) ? '2px solid #4CAF50' : 'none',
-              zIndex: 12, // Above area delimited
+              zIndex: 12,
             }}
             enableResizing={{
               bottom: !isExport && activeId === 'personagem' && config.personalizacao.permitirRedimensionamentoPersonagem,
