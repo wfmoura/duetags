@@ -6,6 +6,7 @@ const ProductContext = createContext();
 
 export const ProductProvider = ({ children }) => {
     const [temas, setTemas] = useState([]);
+    const [categorias, setCategorias] = useState([]);
     const [kits, setKits] = useState([]);
     const [etiquetas, setEtiquetas] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -17,10 +18,12 @@ export const ProductProvider = ({ children }) => {
         try {
             const [
                 { data: temasData, error: temasError },
+                { data: categoriasData, error: categoriasError },
                 { data: kitsData, error: kitsError },
                 { data: etiquetasData, error: etiquetasError }
             ] = await Promise.all([
-                supabase.from('temas').select('*').order('nome'),
+                supabase.from('temas').select('*, categoria:categoria_id(*)').eq('is_active', true).order('nome'),
+                supabase.from('tema_categorias').select('*').order('nome'),
                 supabase.from('kits').select(`
                     id, 
                     nome, 
@@ -41,6 +44,7 @@ export const ProductProvider = ({ children }) => {
             ]);
 
             if (temasError) throw temasError;
+            if (categoriasError) throw categoriasError;
             if (kitsError) throw kitsError;
             if (etiquetasError) throw etiquetasError;
 
@@ -56,6 +60,7 @@ export const ProductProvider = ({ children }) => {
             }));
 
             setTemas(temasData || []);
+            setCategorias(categoriasData || []);
             setKits(normalizedKits || []);
             setEtiquetas(etiquetasData || []);
         } catch (err) {
@@ -77,7 +82,7 @@ export const ProductProvider = ({ children }) => {
     const fontesDisponiveis = config.personalizacao?.fontesDisponiveis || {};
 
     return (
-        <ProductContext.Provider value={{ temas, kits, etiquetas, fontesDisponiveis, isLoading, error, refreshData: loadData, getEtiquetaById, getKitById, getThemeById }}>
+        <ProductContext.Provider value={{ temas, categorias, kits, etiquetas, fontesDisponiveis, isLoading, error, refreshData: loadData, getEtiquetaById, getKitById, getThemeById }}>
             {children}
         </ProductContext.Provider>
     );

@@ -395,15 +395,17 @@ const EtiquetaItem = ({ etiqueta, theme, customizations, zoom, isExport, isCaptu
             lockAspectRatio={true}
             style={{ zIndex: 2 }}
           >
-            <img
+            <Box
+              component="img"
               src={theme.thumbnail}
-              alt="AI Background"
-              style={{
+              crossOrigin="anonymous"
+              draggable={false}
+              sx={{
                 width: '100%',
                 height: '100%',
-                maxWidth: 'none',
+                objectFit: 'contain',
                 pointerEvents: 'none',
-                // Removido multiply pois agora usamos transparência real
+                userSelect: 'none'
               }}
             />
           </Rnd>

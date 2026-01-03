@@ -65,9 +65,10 @@ const Header = () => {
       onClose={handleMenuClose}
     >
       <MenuItem onClick={() => { handleMenuClose(); navigate('/acompanhamento-pedidos'); }}>Meus Pedidos</MenuItem>
-      {user?.role === 'admin' && (
-        <MenuItem onClick={() => { handleMenuClose(); navigate('/pedidos'); }}>Gerenciar Pedidos</MenuItem>
-      )}
+      {user?.role === 'admin' && [
+        <MenuItem key="manage-orders" onClick={() => { handleMenuClose(); navigate('/pedidos'); }}>Gerenciar Pedidos</MenuItem>,
+        <MenuItem key="admin-panel" onClick={() => { handleMenuClose(); navigate('/admin'); }}>Painel Admin</MenuItem>
+      ]}
       <MenuItem onClick={handleLogout}>Sair</MenuItem>
     </Menu>
   );
@@ -90,11 +91,14 @@ const Header = () => {
       {user ? (
         <Box>
           <MenuItem onClick={() => { navigate('/acompanhamento-pedidos'); handleMobileMenuClose(); }}>Meus Pedidos</MenuItem>
-          {user?.role === 'admin' && (
-            <MenuItem onClick={() => { navigate('/pedidos'); handleMobileMenuClose(); }}>
+          {user?.role === 'admin' && [
+            <MenuItem key="mobile-manage-orders" onClick={() => { navigate('/pedidos'); handleMobileMenuClose(); }}>
+              <Typography sx={{ fontWeight: 'bold', color: darkTeal }}>Gerenciar Pedidos</Typography>
+            </MenuItem>,
+            <MenuItem key="mobile-admin-panel" onClick={() => { navigate('/admin'); handleMobileMenuClose(); }}>
               <Typography sx={{ fontWeight: 'bold', color: darkPurple }}>Painel Admin</Typography>
             </MenuItem>
-          )}
+          ]}
           <MenuItem onClick={handleLogout}>Sair</MenuItem>
         </Box>
       ) : (
@@ -165,13 +169,22 @@ const Header = () => {
               <Button component={Link} to="/acompanhamento-pedidos" sx={navLinkStyle}>Meus Pedidos</Button>
             )}
             {user?.role === 'admin' && (
-              <Button
-                component={Link}
-                to="/pedidos"
-                sx={{ ...navLinkStyle, color: darkPurple, fontWeight: '900' }}
-              >
-                Painel Admin
-              </Button>
+              <>
+                <Button
+                  component={Link}
+                  to="/pedidos"
+                  sx={{ ...navLinkStyle, color: darkTeal, fontWeight: '900' }}
+                >
+                  Gestão de Pedidos
+                </Button>
+                <Button
+                  component={Link}
+                  to="/admin"
+                  sx={{ ...navLinkStyle, color: darkPurple, fontWeight: '900' }}
+                >
+                  Painel Admin
+                </Button>
+              </>
             )}
           </Box>
 

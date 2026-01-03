@@ -4,10 +4,12 @@ import Etiquetas from '../Etiquetas';
 import ScenePreview from './ScenePreview';
 import html2canvas from 'html2canvas';
 import supabase from '../../utils/supabaseClient';
+import { useAuth } from '../../contexts/AuthContext';
 import SearchIcon from '@mui/icons-material/Search';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import StoreIcon from '@mui/icons-material/Store';
 import { Grid, InputAdornment } from '@mui/material';
+import MaskedInput from '../MaskedInput';
 
 const ReviewStep = ({
     selectedKit,
@@ -35,6 +37,7 @@ const ReviewStep = ({
     const [couponCode, setCouponCode] = useState("");
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
     const [loadingCep, setLoadingCep] = useState(false);
+    const { user } = useAuth();
 
     const handleCepChange = async (e) => {
         const cep = e.target.value.replace(/\D/g, '');
@@ -99,6 +102,24 @@ const ReviewStep = ({
                 alert("Cupom inválido ou expirado");
                 setAppliedCoupon(null);
             } else {
+                // Check Expiration
+                if (data.expires_at && new Date(data.expires_at) < new Date()) {
+                    alert("Este cupom já expirou");
+                    return;
+                }
+
+                // Check Usage Limit
+                if (data.max_uses !== null && data.usage_count >= data.max_uses) {
+                    alert("Este cupom atingiu o limite de usos");
+                    return;
+                }
+
+                // Check User restriction
+                if (data.user_id && data.user_id !== user?.id) {
+                    alert("Este cupom é exclusivo para outro cliente");
+                    return;
+                }
+
                 setAppliedCoupon(data);
                 setCouponCode("");
             }
@@ -228,6 +249,8 @@ const ReviewStep = ({
                                     onChange={handleCepChange}
                                     placeholder="00000-000"
                                     InputProps={{
+                                        inputComponent: MaskedInput,
+                                        inputProps: { mask: '00000-000' },
                                         endAdornment: (
                                             <InputAdornment position="end">
                                                 {loadingCep ? <CircularProgress size={20} /> : <SearchIcon color="action" fontSize="small" />}

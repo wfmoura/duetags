@@ -11,42 +11,34 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight request
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // 1. Validate Environment
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
         throw new Error('Missing Supabase Environment Variables')
     }
 
-    const supabase = createClient(
-      SUPABASE_URL,
-      SUPABASE_SERVICE_ROLE_KEY
-    )
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // 2. Parse Body
     let body;
     try {
         body = await req.json()
     } catch (e) {
-        return new Response(JSON.stringify({ error: 'Invalid request body', details: e.message }), {
+        return new Response(JSON.stringify({ error: 'Invalid request body' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 400,
         })
     }
 
-    const { orderId } = body
+    const { orderId, target = 'both' } = body
     if (!orderId) {
         return new Response(JSON.stringify({ error: 'Missing orderId' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 400,
         })
     }
-
-    console.log(`Processing order: ${orderId}`)
 
     // 3. Fetch Order
     const { data: order, error: orderError } = await supabase
@@ -55,173 +47,142 @@ serve(async (req) => {
       .eq('id', orderId)
       .single()
 
-    if (orderError) {
-        console.error('Order Fetch Error:', orderError)
-        throw new Error(`Order fetch failed: ${orderError.message}`)
-    }
-    if (!order) {
-        throw new Error('Order not found')
+    if (orderError || !order) {
+        throw new Error(`Order fetch failed or not found: ${orderError?.message}`)
     }
 
-    // 4. Fetch User (Graceful Fallback)
-    let userName = 'Cliente'
-    let userPhone = 'Não informado'
-    let userEmail = 'N/A'
+    // 4. Fetch User Metadata
+    let userName = order.customer_name || 'Cliente'
+    let userPhone = order.customer_phone || 'Não informado'
+    let userEmail = order.customer_email || 'N/A'
     
-    if (order.user_id) {
+    if (order.user_id && (!order.customer_name || !order.customer_email)) {
         try {
             const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(order.user_id)
-            if (userError) {
-                console.warn('User fetch error:', userError)
-            } else if (user) {
-                userName = user.user_metadata?.name || 'Cliente'
-                userPhone = user.user_metadata?.phone || 'Não informado'
-                userEmail = user.email || 'N/A'
+            if (user && !userError) {
+                userName = userName || user.user_metadata?.name || 'Cliente'
+                userPhone = userPhone || user.user_metadata?.phone || 'Não informado'
+                userEmail = userEmail || user.email || 'N/A'
             }
         } catch (uErr) {
             console.warn('User fetch exception:', uErr)
         }
-    } else {
-        console.warn('No user_id in order')
     }
 
     const purchaseDate = order.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR')
-
-    // 5. Prepare Email Content
-    const subject = `Etiquetas para produção - ${userPhone} - ${userName} ${purchaseDate}`
-
     const customizations = order.customizations || {}
     const fullUrls = order.etiquetas_urls || []
     const originalAssetUrl = order.original_asset_url
     const labelMetadata = order.label_metadata || []
 
-    const colorInfo = `
-      <p><strong>Cor Texto:</strong> ${customizations.textColor || 'N/A'} (RGB: ${JSON.stringify(customizations.textColorRgb || {})}, CMYK: ${JSON.stringify(customizations.textColorCmyk || {})})</p>
-      <p><strong>Cor Fundo:</strong> ${customizations.corFundo || 'N/A'} (RGB: ${JSON.stringify(customizations.corFundoRgb || {})}, CMYK: ${JSON.stringify(customizations.corFundoCmyk || {})})</p>
-      <p><strong>Fonte:</strong> ${customizations.fontFamily || 'N/A'}</p>
-      <p><strong>Estilos:</strong> ${customizations.isBold ? 'Negrito ' : ''}${customizations.isItalic ? 'Itálico' : ''}</p>
-      <p><strong>Efeito Aura:</strong> ${customizations.enableAura ? 'Ativado' : 'Desativado'}</p>
-    `
-
-    const purchaseInfo = `
-      <h3>Dados da Compra</h3>
-      <p><strong>ID Pedido:</strong> ${order.id}</p>
-      <p><strong>Kit:</strong> ${order.kit_nome || 'N/A'}</p>
-      <p><strong>Tema:</strong> ${order.tema_nome || 'N/A'}</p>
-      <p><strong>Total:</strong> R$ ${order.total_amount || '0,00'}</p>
-    `
-
-    const clientInfo = `
-      <h3>Dados do Cliente</h3>
-      <p><strong>Nome:</strong> ${userName}</p>
-      <p><strong>Email:</strong> ${userEmail}</p>
-      <p><strong>Telefone:</strong> ${userPhone}</p>
-    `
-
-    let imagesHtml = '<h3>Imagens para Produção</h3>';
-    if (originalAssetUrl) {
-        imagesHtml += `<h4>Ativo Original (IA/Tema)</h4><p><a href="${originalAssetUrl}">Download Original</a></p><img src="${originalAssetUrl}" width="200" style="border: 1px solid #ccc;" />`;
-    }
-
-    if (fullUrls.length > 0) {
-        imagesHtml += '<h4>Etiquetas Finais (Alta Resolução)</h4><div style="display: flex; flex-wrap: wrap; gap: 10px;">';
-        fullUrls.forEach((url: string, index: number) => {
-            imagesHtml += `<div style="margin-bottom: 20px;"><p>Imagem ${index + 1}: <a href="${url}">Download</a></p><img src="${url}" width="300" style="border: 1px solid #ccc;" /></div>`
-        });
-        imagesHtml += '</div>';
-    }
-
-    const metadataHtml = `
-      <h3>Metadados Técnicos (JSON)</h3>
-      <pre style="background: #f4f4f4; padding: 10px; border-radius: 5px; font-size: 12px;">${JSON.stringify(labelMetadata, null, 2)}</pre>
-    `
-
-    const htmlContent = `
-      <h1>Novo Pedido de Etiquetas - DueTags</h1>
-      ${clientInfo}
-      <hr/>
-      ${purchaseInfo}
-      <hr/>
-      <h3>Metadados de Cor e Estilo</h3>
-      ${colorInfo}
-      <hr/>
-      ${imagesHtml}
-      <hr/>
-      ${metadataHtml}
-    `
-
-    // 6. Fetch Recipient Emails from system_settings
-    let emailsToNotify = ['wfmoura2@gmail.com']
-    try {
-        const { data: settings, error: settingsError } = await supabase
-            .from('system_settings')
-            .select('value')
-            .eq('key', 'order_notification_emails')
-            .single()
-        
-        if (!settingsError && settings?.value && Array.isArray(settings.value)) {
-            emailsToNotify = settings.value
-        } else {
-            console.warn('Using default email notification list. Reason:', settingsError?.message || 'Invalid value in DB')
+    const sendEmail = async (to: string | string[], subject: string, html: string) => {
+        console.log(`Sending email to: ${to} | Subject: ${subject}`)
+        if (!RESEND_API_KEY) {
+            console.warn('RESEND_API_KEY missing, skipping real send.')
+            return { id: 'simulated', success: true }
         }
-    } catch (sErr) {
-        console.warn('Failed to fetch system_settings:', sErr)
-    }
-
-    // 7. Send Email
-    if (!RESEND_API_KEY) {
-        console.warn('Missing RESEND_API_KEY')
-        return new Response(JSON.stringify({ 
-            message: "Email simulated (RESEND_API_KEY missing)", 
-            subject, 
-            debug_info: { userName, orderId, recipients: emailsToNotify }
-        }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
+        const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${RESEND_API_KEY}`,
+            },
+            body: JSON.stringify({
+                from: 'DueTags <onboarding@resend.dev>', 
+                to, 
+                subject,
+                html,
+            }),
         })
+        return res.json()
     }
 
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: 'onboarding@resend.dev', 
-        to: emailsToNotify, 
-        subject: subject,
-        html: htmlContent,
-      }),
-    })
+    const results = []
 
-    let data;
-    try {
-        data = await res.json()
-    } catch (jsonErr) {
-        console.error('Resend Response Parsing Error:', jsonErr)
-        data = { error: 'Failed to parse Resend response', status: res.status }
+    // TARGET: PRODUCTION
+    if (target === 'production' || target === 'both') {
+        const prodSubject = `Etiquetas para produção - ${userPhone} - ${userName} ${purchaseDate}`
+        const colorInfo = `
+            <p><strong>Cor Texto:</strong> ${customizations.textColor || 'N/A'}</p>
+            <p><strong>Cor Fundo:</strong> ${customizations.corFundo || 'N/A'}</p>
+            <p><strong>Fonte:</strong> ${customizations.fontFamily || 'N/A'}</p>
+        `
+        
+        let imagesHtml = '<h3>Imagens para Produção</h3>';
+        if (originalAssetUrl) {
+            imagesHtml += `<h4>Ativo Original</h4><p><a href="${originalAssetUrl}">Download Original</a></p><img src="${originalAssetUrl}" width="200" style="border: 1px solid #ccc;" />`;
+        }
+        if (fullUrls.length > 0) {
+            imagesHtml += '<h4>Etiquetas Finais</h4>';
+            fullUrls.forEach((url: string, i: number) => {
+                imagesHtml += `<p>Imagem ${i + 1}: <a href="${url}">Download</a></p><img src="${url}" width="300" style="border: 1px solid #ccc; margin-bottom:10px" />`
+            })
+        }
+
+        const prodHtml = `
+            <h1>Novo Pedido de Etiquetas - DueTags</h1>
+            <h3>Dados do Cliente</h3>
+            <p><strong>Nome:</strong> ${userName}</p>
+            <p><strong>Email:</strong> ${userEmail}</p>
+            <p><strong>Telefone:</strong> ${userPhone}</p>
+            <hr/>
+            <h3>Dados da Compra</h3>
+            <p><strong>ID Pedido:</strong> ${order.id}</p>
+            <p><strong>Kit:</strong> ${order.kit_nome || 'N/A'}</p>
+            ${colorInfo}
+            <hr/>
+            ${imagesHtml}
+            <hr/>
+            <h3>Metadados Técnicos</h3>
+            <pre style="background:#f4f4f4; padding:10px">${JSON.stringify(labelMetadata, null, 2)}</pre>
+        `
+
+        let emailsToNotify = ['wfmoura2@gmail.com']
+        const { data: settings } = await supabase.from('system_settings').select('value').eq('key', 'order_notification_emails').single()
+        if (settings?.value && Array.isArray(settings.value)) emailsToNotify = settings.value
+
+        results.push({ type: 'production', data: await sendEmail(emailsToNotify, prodSubject, prodHtml) })
     }
 
-    if (!res.ok) {
-        console.error('Resend API Error:', data)
-        return new Response(JSON.stringify({ error: 'Resend API Error', details: data }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-        })
+    // TARGET: CLIENT
+    if (target === 'client' || target === 'both') {
+        if (userEmail && userEmail !== 'N/A') {
+            const clientSubject = `DueTags - Confirmação do seu Pedido #${order.id.slice(0, 8)}`
+            const clientHtml = `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+                    <h2 style="color: #2956a4;">Olá ${userName}!</h2>
+                    <p>Seu pedido na <strong>DueTags</strong> foi recebido com sucesso e já estamos cuidando de tudo.</p>
+                    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 0;"><strong>Número do Pedido:</strong> #${order.id.slice(0, 8)}</p>
+                        <p style="margin: 5px 0 0 0;"><strong>Kit:</strong> ${order.kit_nome}</p>
+                        <p style="margin: 5px 0 0 0;"><strong>Data:</strong> ${purchaseDate}</p>
+                    </div>
+                    <p>Você pode acompanhar o status do seu pedido clicando no botão abaixo:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://duetags.com.br/order/${order.id}" 
+                           style="background: #2956a4; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                            Ver Meu Pedido
+                        </a>
+                    </div>
+                    <p>Qualquer dúvida, estamos à disposição!</p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;" />
+                    <p style="font-size: 11px; color: #999; text-align: center;">DueTags - Etiquetas que personalizam sua história.</p>
+                </div>
+            `
+            results.push({ type: 'client', data: await sendEmail(userEmail, clientSubject, clientHtml) })
+        } else {
+            console.warn('Skipping client email: userEmail is missing or N/A')
+        }
     }
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify({ success: true, results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
 
   } catch (error) {
     console.error('Fatal Function Error:', error)
-    return new Response(JSON.stringify({ 
-        error: error.message, 
-        stack: error.stack 
-    }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })

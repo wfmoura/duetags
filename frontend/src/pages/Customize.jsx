@@ -51,7 +51,7 @@ function Customize() {
     showMessage
   } = useContext(AppContext);
   const { user } = useAuth();
-  const { kits, temas, etiquetas, fontesDisponiveis, isLoading: isProductsLoading } = useProduct();
+  const { kits, temas, categorias, etiquetas, fontesDisponiveis, isLoading: isProductsLoading } = useProduct();
   const { clearCart } = useCart();
 
   // Local State
@@ -121,11 +121,12 @@ function Customize() {
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const orderId = queryParams.get('edit');
+    const isAdminMode = user?.role === 'admin' && !!orderId;
 
     if (orderId && kits.length > 0 && temas.length > 0 && !isLoadingOrder && !editingOrderId) {
       loadOrderForEditing(orderId);
     }
-  }, [location.search, kits, temas]);
+  }, [location.search, kits, temas, user]);
 
   // Effect para carregar o kit inicial do estado da navegação ou localStorage
   useEffect(() => {
@@ -184,7 +185,18 @@ function Customize() {
       const theme = temas.find(t => String(t.id) === String(order.tema_id));
 
       if (kit) setSelectedKit(normalizeKit(kit));
-      if (theme) setSelectedTheme(theme);
+
+      if (theme) {
+        setSelectedTheme(theme);
+      } else if (order.tema_id && order.tema_id.startsWith('ai-')) {
+        // Recover AI theme from order metadata
+        setSelectedTheme({
+          id: order.tema_id,
+          nome: order.tema_nome || 'Tema AI',
+          thumbnail: order.original_asset_url,
+          isAiBackground: true
+        });
+      }
 
       if (order.customizations) {
         setCustomizations(order.customizations);
@@ -207,10 +219,9 @@ function Customize() {
   // Effect para sugerir cores iniciais baseado no tema
 
   useEffect(() => {
-    if (selectedTheme?.thumbnail) {
-      // Don't auto-extract if we are already in the customization step and colors are set
-      // However, if the theme JUST changed, we might want to refresh.
-      // We check if the user is in step 1 (Theme Selection) or if it's the first time
+    if (selectedTheme?.thumbnail && activeStep === 0) {
+      // Don't auto-extract if we are already in the customization step (activeStep > 0)
+      // or if colors are already set by the user.
       const applyThemeColors = async () => {
         try {
           let thumb = selectedTheme.thumbnail;
@@ -221,17 +232,18 @@ function Customize() {
 
           const dominant = await getDominantColor(thumb);
           const suggestions = suggestColorsForTheme(dominant);
-          setCustomizations({
+          setCustomizations(prev => ({
+            ...prev,
             corFundo: suggestions.backgroundColor,
             textColor: suggestions.textColor
-          });
+          }));
         } catch (e) {
           console.error("Error suggesting colors:", e);
         }
       };
       applyThemeColors();
     }
-  }, [selectedTheme?.thumbnail, selectedTheme?.id]); // Triggered on theme change
+  }, [selectedTheme?.thumbnail, selectedTheme?.id, activeStep]); // Triggered on theme change or step change
 
   const camposNecessarios = useMemo(() => {
     if (!selectedKit || !selectedKit.etiquetas) return [];
@@ -348,7 +360,9 @@ function Customize() {
     }
   };
 
-  const handleFinalizar = async () => {
+  const handleFinalizar = async (mode = 'standard') => {
+    const isAdminEdit = user?.role === 'admin' && !!editingOrderId;
+
     if (!user) {
       // Salva o estado atual para retomar após o login
       const pendingData = {
@@ -388,13 +402,17 @@ function Customize() {
         setLoadingMessage("Salvando tema gerado por IA...");
         const base64Response = await fetch(selectedTheme.thumbnail);
         const originalBlob = await base64Response.blob();
-        const originalFileName = `original_${user.id}_${Date.now()}.png`;
-        const { data: originalUpload, error: originalError } = await supabase.storage
-          .from("etiquetas")
-          .upload(originalFileName, originalBlob);
 
-        if (!originalError) {
-          const { data: { publicUrl } } = supabase.storage.from("etiquetas").getPublicUrl(originalUpload.path);
+        // Ensure we have a valid blob type
+        const blobWithType = new Blob([originalBlob], { type: 'image/png' });
+
+        const originalFileName = `ai-themes/${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('original_assets')
+          .upload(originalFileName, blobWithType);
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage.from("original_assets").getPublicUrl(uploadData.path);
           finalOriginalAssetUrl = publicUrl;
         }
       }
@@ -437,10 +455,10 @@ function Customize() {
         const fileName = `order_${user.id}_${Date.now()}_${i}.png`;
 
         setLoadingMessage(`Enviando arquivo ${i + 1} para o servidor...`);
-        const { data, error } = await supabase.storage.from("etiquetas").upload(fileName, blob);
-        if (error) throw error;
+        const { data: uploadResult, error: uploadError } = await supabase.storage.from("etiquetas").upload(fileName, blob);
+        if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage.from("etiquetas").getPublicUrl(data.path);
+        const { data: { publicUrl } } = supabase.storage.from("etiquetas").getPublicUrl(uploadResult.path);
         uploads.push(publicUrl);
       }
 
@@ -484,34 +502,50 @@ function Customize() {
         label_metadata: Array.from(etiquetaElements).map((el, i) => {
           const index = el.getAttribute('data-etiqueta-index');
           const draggables = Array.from(el.querySelectorAll('.draggable-text-layer')).map(d => {
-            const textEl = d.querySelector('.draggable-text-layer div') || d;
+            const textContainer = d.querySelector('[data-field-id]');
             const computedStyle = window.getComputedStyle(d);
+
+            // Get internal text container style
+            const textStyle = textContainer ? window.getComputedStyle(textContainer) : computedStyle;
+
             return {
-              text: d.innerText,
+              text: d.innerText.split('\n')[0], // Take only the first line/main text
+              field_id: textContainer?.getAttribute('data-field-id'),
               position: {
                 x: d.style.left || computedStyle.left,
-                y: d.style.top || computedStyle.top
+                y: d.style.top || computedStyle.top,
+                raw_x: d.style.left,
+                raw_y: d.style.top
               },
               size: {
                 width: d.style.width || computedStyle.width,
                 height: d.style.height || computedStyle.height
               },
               style: {
-                fontFamily: customizations.fontFamily,
-                fontSize: d.querySelector('[data-font-size]')?.getAttribute('data-font-size') || 'auto',
-                color: customizations.textColor,
+                fontFamily: textStyle.fontFamily || customizations.fontFamily,
+                fontSize: textContainer?.getAttribute('data-font-size') || textStyle.fontSize,
+                color: textStyle.color || customizations.textColor,
+                fontWeight: textStyle.fontWeight,
+                fontStyle: textStyle.fontStyle,
                 isBold: customizations.isBold,
                 isItalic: customizations.isItalic
               }
             };
           });
+
           return {
             label_id: index,
-            texts: draggables
+            etiqueta_nome: el.querySelector('p')?.innerText || `Etiqueta ${i}`,
+            texts: draggables,
+            background: {
+              color: customizations.corFundo,
+              cmyk: hexToCmyk(customizations.corFundo)
+            }
           };
         }),
         status: "pending",
         customer_email: user.email,
+        customer_name: user.name || '',
         customer_phone: user.phone || '',
         customer_cpf: user.cpf || '',
         delivery_info: deliveryInfo,
@@ -519,13 +553,100 @@ function Customize() {
         delivery_method: deliveryMethod
       };
 
-      setLoadingMessage("Registrando seu pedido...");
-      console.log("Tentando criar pedido com metadados estendidos:", orderData);
-      const { data: order, error } = await supabase.from("orders").insert(orderData).select().single();
+      // Ensure some fields are definitely present in orderData
+      const orderDataFinal = {
+        ...orderData,
+        customizations: {
+          ...orderData.customizations,
+          corFundo: customizations.corFundo,
+          textColor: customizations.textColor,
+          fontFamily: customizations.fontFamily,
+          fontSizeScale: customizations.fontSizeScale
+        }
+      };
 
-      if (error) {
-        console.error("Erro completo do Supabase:", error);
-        throw new Error(`Erro ao gravar no banco: ${error.message} (${error.code})`);
+      setLoadingMessage("Registrando seu pedido...");
+      console.log("Tentando processar pedido com modo:", mode);
+
+      let finalOrder;
+      if (mode === 'update' && editingOrderId) {
+        setLoadingMessage("Atualizando pedido existente...");
+        const { data, error: updateError } = await supabase
+          .from("orders")
+          .update({
+            customizations: orderDataFinal.customizations,
+            etiquetas_urls: orderDataFinal.etiquetas_urls,
+            label_metadata: orderDataFinal.label_metadata,
+            original_asset_url: orderDataFinal.original_asset_url
+          })
+          .eq('id', editingOrderId)
+          .select()
+          .single();
+        if (updateError) throw updateError;
+        finalOrder = data;
+
+        await supabase.from('access_logs').insert({
+          user_id: user.id,
+          event_type: 'admin_update',
+          description: `Admin atualizou o design do pedido: ${editingOrderId}`
+        });
+      } else {
+        const { data: insertData, error: insertError } = await supabase
+          .from("orders")
+          .insert({
+            ...orderDataFinal,
+            status: mode === 'admin_copy' ? 'producao' : 'pending'
+          })
+          .select()
+          .single();
+        if (insertError) throw insertError;
+        finalOrder = insertData;
+
+        if (selectedTheme?.isAiBackground) {
+          setLoadingMessage("Adicionando tema à coleção pública...");
+          try {
+            const aiThemeId = `ai_theme_${Date.now()}`;
+            const { error: themeError } = await supabase
+              .from('temas')
+              .insert({
+                id: aiThemeId, // Mandatory Text ID
+                nome: selectedTheme.nome || 'Novo Tema IA',
+                thumbnail: finalOriginalAssetUrl,
+                original_asset_url: finalOriginalAssetUrl,
+                is_ai_generated: true,
+                categoria_id: (await supabase.from('tema_categorias').select('id').eq('slug', 'geral').single()).data?.id,
+                is_active: true
+              });
+            if (themeError) console.error("Error adding AI theme to portfolio:", themeError);
+          } catch (e) {
+            console.error("Error in AI portfolio logic:", e);
+          }
+        }
+
+        // NEW: If a coupon was used, increment its usage count and log it
+        if (appliedCoupon) {
+          try {
+            await supabase.rpc('increment_coupon_usage', { coupon_id: appliedCoupon.id });
+            await supabase.from('coupon_usages').insert({
+              coupon_id: appliedCoupon.id,
+              order_id: finalOrder.id,
+              user_id: user?.id
+            });
+          } catch (e) {
+            console.error("Error recording coupon usage:", e);
+          }
+        }
+
+        await supabase.from('access_logs').insert({
+          user_id: user.id,
+          event_type: mode === 'admin_copy' ? 'admin_copy' : 'purchase',
+          description: mode === 'admin_copy' ? `Admin gerou cópia especial: ${finalOrder.id}` : `Novo pedido: ${finalOrder.id}`
+        });
+      }
+
+      if (insertError) {
+        console.error("Erro completo do Supabase:", insertError);
+        throw new Error(`Erro ao gravar no banco: ${insertError.message} (${insertError.code})`);
       }
 
       // Save address to profile if logged in
@@ -548,13 +669,13 @@ function Customize() {
       hardReset();
 
       setLoadingMessage("Finalizado!");
-      showMessage("Pedido criado com sucesso!", "success");
-      navigate(`/order/${order.id}`);
+      showMessage(mode === 'update' ? "Pedido atualizado!" : `Olá ${user?.user_metadata?.name || 'Cliente'}, seu pedido foi criado com sucesso!`, "success");
+      navigate(`/order/${finalOrder.id}`);
 
-      setLoadingMessage("✅ Equipe de produção notificada!");
+      setLoadingMessage(mode === 'update' ? "✅ Design atualizado!" : "✅ Equipe de produção notificada!");
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      setLoadingMessage("Pedido concluído com sucesso!");
+      setLoadingMessage(mode === 'update' ? "Design atualizado com sucesso!" : "Pedido concluído com sucesso!");
       setFinalizeSuccess(true);
 
       // Add WhatsApp button after checkout if it's Uber delivery
@@ -563,7 +684,7 @@ function Customize() {
 
       setLoadingMessage(
         <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="h6" gutterBottom>Pedido realizado!</Typography>
+          <Typography variant="h6" gutterBottom>Olá {user?.user_metadata?.name || 'Cliente'}! Seu pedido foi realizado!</Typography>
           {deliveryMethod === 'uber' && (
             <Button
               variant="contained"
@@ -740,6 +861,7 @@ function Customize() {
                 ) : (
                   <ThemeSelectionStep
                     temas={temas}
+                    categorias={categorias}
                     selectedTheme={selectedTheme}
                     onSelectTheme={(t) => { setSelectedTheme(t); setActiveStep(1); }}
                     onOpenAiModal={() => setOpenAiModal(true)}
@@ -879,17 +1001,42 @@ function Customize() {
           )}
         </Box>
 
-        <Button
-          onClick={handleNext}
-          variant="contained"
-          disabled={isSaving || (activeStep === steps.length - 1 && !acceptedTerms)}
-          sx={{
-            px: 6, py: 1.5, borderRadius: '10px', textTransform: 'none', fontWeight: 700,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-          }}
-        >
-          {activeStep === steps.length - 1 ? "Fechar o Pedido" : "Próximo Passo"}
-        </Button>
+        <Box display="flex" gap={2}>
+          {user?.role === 'admin' && editingOrderId ? (
+            <>
+              <Button
+                onClick={() => handleFinalizar('update')}
+                variant="contained"
+                color="info"
+                disabled={isSaving}
+                sx={{ px: 4, borderRadius: '10px', textTransform: 'none', fontWeight: 700 }}
+              >
+                Atualizar Design (Fixo)
+              </Button>
+              <Button
+                onClick={() => handleFinalizar('admin_copy')}
+                variant="contained"
+                color="secondary"
+                disabled={isSaving}
+                sx={{ px: 4, borderRadius: '10px', textTransform: 'none', fontWeight: 700 }}
+              >
+                Salvar como Novo (Admin)
+              </Button>
+            </>
+          ) : (
+            <Button
+              onClick={handleNext}
+              variant="contained"
+              disabled={isSaving || (activeStep === steps.length - 1 && !acceptedTerms)}
+              sx={{
+                px: 6, py: 1.5, borderRadius: '10px', textTransform: 'none', fontWeight: 700,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              }}
+            >
+              {activeStep === steps.length - 1 ? "Fechar o Pedido" : "Próximo Passo"}
+            </Button>
+          )}
+        </Box>
       </Paper>
 
       {showOnboarding && (
@@ -971,6 +1118,7 @@ function Customize() {
                 <Box
                   component="img"
                   src={img.url}
+                  crossOrigin="anonymous"
                   sx={{
                     width: '100%',
                     cursor: 'pointer',

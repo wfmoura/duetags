@@ -59,6 +59,16 @@ export const AuthProvider = ({ children }) => {
                 options: { data: metadata }
             });
             if (error) throw error;
+
+            // Log registration
+            if (data.user) {
+                await supabase.from('access_logs').insert({
+                    user_id: data.user.id,
+                    event_type: 'registration',
+                    description: `Novo usuário cadastrado: ${email}`
+                });
+            }
+
             return data;
         } catch (error) {
             console.error('Register error:', error);
