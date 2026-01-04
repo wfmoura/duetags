@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }) => {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo,
+                    redirectTo, flowType: "implicit",
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
