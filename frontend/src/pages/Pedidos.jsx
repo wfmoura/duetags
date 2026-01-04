@@ -413,20 +413,28 @@ const Pedidos = () => {
                       <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
                         {new Date(pedido.created_at).toLocaleDateString('pt-BR')} às {new Date(pedido.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </Typography>
-                      <Typography variant="body2"><strong>Cliente:</strong> {pedido.customer_email}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        {pedido.customer_name || 'Cliente sem nome'}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary" display="block" sx={{ mb: 0.5 }}>
+                        {pedido.customer_email}
+                      </Typography>
+
                       <Box display="flex" alignItems="center" gap={0.5}>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {pedido.phone || 'N/A'}
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#00695c' }}>
+                          {pedido.customer_phone || pedido.phone || 'N/A'}
                         </Typography>
-                        {pedido.phone && (
-                          <IconButton
-                            size="small"
-                            href={getWhatsAppLink(pedido.phone)}
-                            target="_blank"
-                            sx={{ color: '#25D366' }}
-                          >
-                            <WhatsAppIcon fontSize="inherit" />
-                          </IconButton>
+                        {(pedido.customer_phone || pedido.phone) && (
+                          <Tooltip title="Conversar no WhatsApp">
+                            <IconButton
+                              size="small"
+                              href={getWhatsAppLink(pedido.customer_phone || pedido.phone)}
+                              target="_blank"
+                              sx={{ color: '#25D366', p: 0.5 }}
+                            >
+                              <WhatsAppIcon sx={{ fontSize: '1.2rem' }} />
+                            </IconButton>
+                          </Tooltip>
                         )}
                       </Box>
                     </Box>

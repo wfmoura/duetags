@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Typography,
@@ -52,6 +53,7 @@ import MaskedInput from '../MaskedInput';
 const AdminClientes = () => {
     const [clientes, setClientes] = useState([]);
     const [filteredClientes, setFilteredClientes] = useState([]);
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCliente, setSelectedCliente] = useState(null); // Para o modal de pedidos/detalhes
@@ -488,7 +490,15 @@ const AdminClientes = () => {
                                 <List disablePadding>
                                     {clienteOrders.map((order, index) => (
                                         <React.Fragment key={order.id}>
-                                            <ListItem alignItems="flex-start" sx={{ px: 0 }}>
+                                            <ListItem
+                                                alignItems="flex-start"
+                                                sx={{
+                                                    px: 1,
+                                                    borderRadius: '8px',
+                                                    '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', cursor: 'pointer' }
+                                                }}
+                                                onClick={() => { setSelectedCliente(null); navigate(`/admin/order/${order.id}`); }}
+                                            >
                                                 <ListItemText
                                                     primary={`Pedido #${order.id.slice(0, 8)}`}
                                                     secondaryTypographyProps={{ component: 'div' }}

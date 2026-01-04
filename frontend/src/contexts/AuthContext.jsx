@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
                     id: data.user.id,
                     email: data.user.email,
                     role: data.user.user_metadata?.role || 'user',
-                    name: data.user.user_metadata?.name,
+                    name: data.user.user_metadata?.name || data.user.user_metadata?.full_name,
                     phone: data.user.user_metadata?.phone,
                     cpf: data.user.user_metadata?.cpf
                 };
@@ -146,41 +146,77 @@ export const AuthProvider = ({ children }) => {
     }, [handleLogout]);
 
     useEffect(() => {
-        const initSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
+        let authSubscription = null;
 
-            if (session) {
-                setToken(session.access_token);
-                setUser({
-                    id: session.user.id,
-                    email: session.user.email,
-                    role: session.user.user_metadata?.role || 'user',
-                    name: session.user.user_metadata?.name,
-                    phone: session.user.user_metadata?.phone,
-                    cpf: session.user.user_metadata?.cpf
-                });
-            }
-            setIsLoading(false);
-
-            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const setupAuth = async () => {
+            // 1. Get initial session
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
                 if (session) {
                     setToken(session.access_token);
                     setUser({
                         id: session.user.id,
                         email: session.user.email,
                         role: session.user.user_metadata?.role || 'user',
-                        name: session.user.user_metadata?.name,
+                        name: session.user.user_metadata?.name || session.user.user_metadata?.full_name,
                         phone: session.user.user_metadata?.phone,
                         cpf: session.user.user_metadata?.cpf
                     });
-                } else {
+                }
+            } catch (err) {
+                console.error("Error getting initial session:", err);
+            } finally {
+                setIsLoading(false);
+            }
+
+            // 2. Listen for auth changes
+            const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+                console.log("Auth State Change:", event, session ? "Session active" : "No session");
+
+                if (session) {
+                    const userData = {
+                        id: session.user.id,
+                        email: session.user.email,
+                        role: session.user.user_metadata?.role || 'user',
+                        name: session.user.user_metadata?.name || session.user.user_metadata?.full_name,
+                        phone: session.user.user_metadata?.phone,
+                        cpf: session.user.user_metadata?.cpf
+                    };
+
+                    setToken(session.access_token);
+                    localStorage.setItem('token', session.access_token);
+                    localStorage.setItem('refreshToken', session.refresh_token);
+                    setUser(userData);
+
+                    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                        try {
+                            await supabase.from('profiles').upsert({
+                                id: session.user.id,
+                                email: session.user.email,
+                                name: userData.name,
+                                role: userData.role
+                            }, { onConflict: 'id' });
+                        } catch (syncErr) {
+                            console.error("Error syncing profile:", syncErr);
+                        }
+                    }
+                } else if (event === 'SIGNED_OUT') {
                     handleLogout();
+                } else if (event === 'INITIAL_SESSION' && !session) {
+                    setIsLoading(false);
                 }
             });
 
-            return () => subscription.unsubscribe();
+            authSubscription = subscription;
         };
-        initSession();
+
+        setupAuth();
+
+        return () => {
+            if (authSubscription) {
+                authSubscription.unsubscribe();
+            }
+        };
     }, [handleLogout]);
 
     return (

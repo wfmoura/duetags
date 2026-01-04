@@ -110,8 +110,8 @@ const AdminTestFlow = () => {
             setActiveStep(3);
 
             // 4. Trigger Email
-            addLog('Disparando e-mail de produção (send-order-email)...');
-            const { data: emailData, error: emailError } = await supabase.functions.invoke('send-order-email', {
+            addLog('Disparando e-mail de produção (send-order-email-v2)...');
+            const { data: emailData, error: emailError } = await supabase.functions.invoke('send-order-email-v2', {
                 body: { orderId: order.id, target: 'production' }
             });
 
