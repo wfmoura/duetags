@@ -71,7 +71,7 @@ const AppRoutes = () => {
       <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
       <Route path="/pedidos" element={isAdmin ? <Pedidos /> : <Box p={4} textAlign="center"><Typography variant="h5">Acesso Restrito</Typography><Button href="/" sx={{ mt: 2 }}>Voltar para Home</Button></Box>} />
       <Route path="/admin" element={isAdmin ? <AdminDashboard /> : <Box p={4} textAlign="center"><Typography variant="h5">Acesso Restrito</Typography><Button href="/" sx={{ mt: 2 }}>Voltar para Home</Button></Box>} />
-      <Route path="/order/:orderId" element={<OrderPage />} />
+      <Route path="/order/:orderId" element={<ProtectedRoute><OrderPage /></ProtectedRoute>} />
       <Route path="/print/:orderId" element={<ProtectedRoute><PrintPage /></ProtectedRoute>} />
       <Route path="/acompanhamento-pedidos" element={<AcompanhamentoPedidos />} />
       <Route path="*" element={<div>Página não encontrada (404)</div>} />

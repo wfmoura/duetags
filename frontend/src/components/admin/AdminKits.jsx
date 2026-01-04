@@ -40,6 +40,9 @@ function AdminKits() {
     const [editItem, setEditItem] = useState(null);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchData = async () => {
         setLoading(true);
@@ -145,14 +148,24 @@ function AdminKits() {
         setEditItem({ ...editItem, etiquetas: updated });
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Tem certeza que deseja excluir este kit?')) return;
+    const handleDeleteClick = (id) => {
+        setItemToDelete(id);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!itemToDelete) return;
+        setIsDeleting(true);
         try {
-            const { error: deleteError } = await supabase.from('kits').delete().eq('id', id);
+            const { error: deleteError } = await supabase.from('kits').delete().eq('id', itemToDelete);
             if (deleteError) throw deleteError;
+            setDeleteConfirmOpen(false);
+            setItemToDelete(null);
             fetchData();
         } catch (err) {
             setError(err.message);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -206,7 +219,7 @@ function AdminKits() {
                                     <IconButton onClick={() => handleOpenEdit(k)} color="primary">
                                         <EditIcon />
                                     </IconButton>
-                                    <IconButton onClick={() => handleDelete(k.id)} color="error">
+                                    <IconButton onClick={() => handleDeleteClick(k.id)} color="error">
                                         <DeleteIcon />
                                     </IconButton>
                                 </TableCell>
@@ -286,6 +299,25 @@ function AdminKits() {
                         startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
                     >
                         Salvar Kit
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={deleteConfirmOpen} onClose={() => !isDeleting && setDeleteConfirmOpen(false)}>
+                <DialogTitle sx={{ fontWeight: 'bold' }}>Excluir Kit</DialogTitle>
+                <DialogContent>
+                    <Typography>Tem certeza que deseja excluir este kit? Esta ação não pode ser desfeita.</Typography>
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button onClick={() => setDeleteConfirmOpen(false)} disabled={isDeleting}>Cancelar</Button>
+                    <Button
+                        onClick={handleConfirmDelete}
+                        color="error"
+                        variant="contained"
+                        disabled={isDeleting}
+                        startIcon={isDeleting ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
+                    >
+                        Excluir
                     </Button>
                 </DialogActions>
             </Dialog>

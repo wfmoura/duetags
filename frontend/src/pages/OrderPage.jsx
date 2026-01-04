@@ -52,6 +52,8 @@ const OrderPage = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [paymentTab, setPaymentTab] = useState(0); // 0 for Pix, 1 for Card
 
+    const purchaseDate = order?.created_at ? new Date(order.created_at).toLocaleString('pt-BR') : '';
+
     // Fetch order data
     useEffect(() => {
         const fetchOrder = async () => {
@@ -163,10 +165,6 @@ const OrderPage = () => {
         return basePrice * 0.95;
     };
 
-    const purchaseDate = order?.created_at
-        ? new Date(order.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        : '---';
-
     // Realtime subscription for order status updates
     useEffect(() => {
         if (!orderId) return;
@@ -188,7 +186,78 @@ const OrderPage = () => {
         };
     }, [orderId]);
 
+    const handleTabChange = async (event, newValue) => {
+        setPaymentTab(newValue);
+        const method = newValue === 0 ? 'pix' : 'card';
 
+        // Calcular novo total baseado no método
+        const basePrice = order.kit_preco || 0;
+        const newTotal = method === 'pix' ? calculatePixPrice(basePrice) : basePrice;
+
+        // Sync with DB
+        try {
+            const { error: updateError } = await supabase
+                .from('orders')
+                .update({
+                    payment_method: method,
+                    total_amount: newTotal
+                })
+                .eq('id', order.id);
+
+            if (updateError) throw updateError;
+            // O realtime cuidará de atualizar o estado 'order' localmente
+        } catch (err) {
+            console.error("Erro ao atualizar método de pagamento:", err);
+            enqueueSnackbar("Erro ao atualizar preço. Tente novamente.", { variant: 'error' });
+        }
+    };
+
+    const handleUploadComprovante = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validar tamanho (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            enqueueSnackbar("Arquivo muito grande. Máximo 5MB.", { variant: 'error' });
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `comprovante_${order.id}_${Date.now()}.${fileExt}`;
+            const filePath = `comprovantes/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('etiquetas') // Using existing bucket for now, or instructions to create 'comprovantes'
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('etiquetas')
+                .getPublicUrl(filePath);
+
+            const { error: updateError } = await supabase
+                .from('orders')
+                .update({
+                    comprovante_url: publicUrl,
+                    status: 'review'
+                })
+                .eq('id', order.id);
+
+            if (updateError) throw updateError;
+
+            setComprovanteUrl(publicUrl);
+            setOrder(prev => ({ ...prev, status: 'review', comprovante_url: publicUrl }));
+            enqueueSnackbar("Comprovante enviado com sucesso! Aguarde a conferência.", { variant: 'success' });
+        } catch (err) {
+            console.error("Erro no upload:", err);
+            enqueueSnackbar("Erro ao enviar comprovante. Tente novamente.", { variant: 'error' });
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     const isPending = order?.status === 'pending';
     const isReview = order?.status === 'review';
@@ -216,106 +285,306 @@ const OrderPage = () => {
         <Box sx={{ padding: "24px", maxWidth: "900px", margin: "0 auto" }}>
             {/* Header */}
             <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <Typography variant="h4" gutterBottom sx={{ fontWeight: 800, color: 'primary.main' }}>
-                    {isCompleted ? "✨ Pedido em Produção!" : "📝 Detalhes do seu Pedido"}
+                <Typography variant="h4" gutterBottom sx={{ fontWeight: "bold", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                    {isCompleted ? <CheckCircleIcon color="success" fontSize="large" /> : (isReview ? "⏳" : "🎉")}
+                    {isCompleted ? "Pedido Confirmado!" : (isReview ? "Pagamento em Análise" : "Pedido Recebido!")}
                 </Typography>
                 <Typography variant="body1" color="textSecondary">
                     {isCompleted
-                        ? "Tudo pronto! Suas etiquetas já estão sendo preparadas com carinho."
-                        : `Oi ${order.customer_name?.split(' ')[0] || 'cliente'}, confira abaixo o que preparamos para você.`}
+                        ? "Obrigado! Seu pedido está em produção."
+                        : (isReview
+                            ? "Recebemos seu comprovante. Nossa equipe irá conferir em instantes."
+                            : "Seu pedido foi registrado e está aguardando o pagamento.")}
                 </Typography>
             </Box>
 
             {/* Order Summary Card */}
-            <Paper elevation={0} sx={{ p: 4, mb: 4, borderRadius: '24px', border: '1px solid #e2e8f0', bgcolor: 'white' }}>
-                <Grid container spacing={4}>
-                    <Grid item xs={12} md={6}>
-                        <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, color: 'primary.main' }}>
-                            📋 Resumo do Pedido
+            <Paper elevation={3} sx={{ p: 3, mb: 4, borderRadius: '16px' }}>
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'center', sm: 'flex-start' },
+                    textAlign: { xs: 'center', sm: 'left' },
+                    mb: 2,
+                    gap: 2
+                }}>
+                    <Box>
+                        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                            Resumo do Pedido #{order.id.slice(0, 8)}
                         </Typography>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="body2" color="textSecondary">Identificador:</Typography>
-                                <Typography variant="body2" sx={{ fontWeight: 700 }}>#{order.id.slice(0, 8).toUpperCase()}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="body2" color="textSecondary">Kit Escolhido:</Typography>
-                                <Typography variant="body2" sx={{ fontWeight: 700 }}>{order.kit_nome}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="body2" color="textSecondary">Tema:</Typography>
-                                <Typography variant="body2" sx={{ fontWeight: 700 }}>{order.tema_nome}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="body2" color="textSecondary">Data:</Typography>
-                                <Typography variant="body2" sx={{ fontWeight: 700 }}>{purchaseDate}</Typography>
-                            </Box>
-                            <Divider sx={{ my: 1 }} />
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>Total:</Typography>
-                                <Typography variant="h5" color="primary" sx={{ fontWeight: 900 }}>
-                                    R$ {order.total_amount?.toFixed(2).replace('.', ',')}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    </Grid>
-
-                    <Grid item xs={12} md={6}>
-                        <Typography variant="h6" sx={{ fontWeight: 800, mb: 2, color: 'primary.main' }}>
-                            📍 Entrega
-                        </Typography>
-                        <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                                {order.delivery_method === 'pickup' ? '📦 Retirada' : '🛵 Envio por Uber'}
+                        <Typography variant="body2"><strong>Kit:</strong> {order.kit_nome}</Typography>
+                        <Typography variant="body2" color="textSecondary"><strong>Tema:</strong> {order.tema_nome}</Typography>
+                        {purchaseDate && (
+                            <Typography variant="body2" color="textSecondary">
+                                <strong>Data:</strong> {purchaseDate}
                             </Typography>
-                            <Typography variant="caption" color="textSecondary" sx={{ lineHeight: 1.4, display: 'block' }}>
-                                {order.delivery_method === 'pickup'
-                                    ? 'Local: Setor Noroeste. Entraremos em contato via WhatsApp para agendar sua retirada assim que estiver pronto!'
-                                    : 'A entrega será feita via Uber flash. Solicitamos a coleta assim que a produção for finalizada.'}
-                            </Typography>
-                        </Box>
-                    </Grid>
-                </Grid>
-
-                {/* Etiquetas Preview */}
-                {imageUrls.length > 0 && (
-                    <Box sx={{ mt: 5 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 800, mb: 3, textAlign: 'center' }}>
-                            🎨 Suas Etiquetas Personalizadas
+                        )}
+                        <Typography variant="body2" color="textSecondary">
+                            <strong>Entrega:</strong> {order.delivery_method === 'pickup' ? 'Retirada (Setor Noroeste)' : 'Uber (por conta do cliente)'}
                         </Typography>
-                        <Grid container spacing={2} justifyContent="center">
-                            {imageUrls.map((url, index) => (
-                                <Grid item xs={6} sm={4} md={2.4} key={index}>
-                                    <Box
-                                        sx={{
-                                            p: 1,
-                                            bgcolor: 'white',
-                                            borderRadius: '16px',
-                                            border: '1px solid #e2e8f0',
-                                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-                                            transition: 'transform 0.2s',
-                                            '&:hover': { transform: 'scale(1.05)' }
-                                        }}
-                                    >
-                                        <Box
-                                            component="img"
-                                            src={url}
-                                            sx={{
-                                                width: '100%',
-                                                height: 'auto',
-                                                borderRadius: '8px',
-                                                display: 'block'
-                                            }}
-                                        />
-                                    </Box>
-                                </Grid>
-                            ))}
-                        </Grid>
                     </Box>
-                )}
+                    <Box sx={{ textAlign: { xs: 'center', sm: 'right' } }}>
+                        <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold' }}>
+                            R$ {order.total_amount?.toFixed(2).replace('.', ',')}
+                        </Typography>
+                        {order.payment_method === 'pix' && (
+                            <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 600, display: 'block' }}>
+                                (5% de desconto PIX aplicado)
+                            </Typography>
+                        )}
+                    </Box>
+                </Box>
+
             </Paper>
 
+            {/* Payment Selection & Instructions */}
+            {(isPending || isReview) && (
+                <Box sx={{ mb: 6 }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 800, textAlign: 'center', mb: 3 }}>
+                        Escolha como deseja pagar:
+                    </Typography>
 
+                    <Grid container spacing={2} sx={{ mb: 4 }}>
+                        {/* Pix Option Card */}
+                        <Grid item xs={12} sm={6}>
+                            <Paper
+                                onClick={() => !isReview && handleTabChange(null, 0)}
+                                elevation={paymentTab === 0 ? 8 : 1}
+                                sx={{
+                                    p: 3,
+                                    borderRadius: '20px',
+                                    cursor: isReview ? 'default' : 'pointer',
+                                    border: '3px solid',
+                                    borderColor: paymentTab === 0 ? 'primary.main' : 'transparent',
+                                    bgcolor: paymentTab === 0 ? 'rgba(41, 86, 164, 0.03)' : 'white',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    '&:hover': {
+                                        transform: isReview ? 'none' : 'translateY(-4px)',
+                                        boxShadow: isReview ? 'none' : 4
+                                    }
+                                }}
+                            >
+                                {paymentTab === 0 && (
+                                    <Box sx={{ position: 'absolute', top: -10, right: -10, bgcolor: 'primary.main', color: 'white', p: 1, borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <CheckCircleIcon fontSize="small" />
+                                    </Box>
+                                )}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                    <Box sx={{ p: 1.5, bgcolor: '#e8f5e9', borderRadius: '12px', color: '#2e7d32' }}>
+                                        <PixIcon fontSize="large" />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="h6" sx={{ fontWeight: 800 }}>PIX</Typography>
+                                        <Chip
+                                            label="-5% DE DESCONTO"
+                                            size="small"
+                                            color="success"
+                                            sx={{ fontWeight: 900, fontSize: '0.65rem', height: 20 }}
+                                        />
+                                    </Box>
+                                </Box>
+                                <Typography variant="caption" color="textSecondary">
+                                    Aprovação instantânea e o melhor preço para você.
+                                </Typography>
+                            </Paper>
+                        </Grid>
+
+                        {/* Card Option Card */}
+                        <Grid item xs={12} sm={6}>
+                            <Paper
+                                onClick={() => !isReview && handleTabChange(null, 1)}
+                                elevation={paymentTab === 1 ? 8 : 1}
+                                sx={{
+                                    p: 3,
+                                    borderRadius: '20px',
+                                    cursor: isReview ? 'default' : 'pointer',
+                                    border: '3px solid',
+                                    borderColor: paymentTab === 1 ? 'primary.main' : 'transparent',
+                                    bgcolor: paymentTab === 1 ? 'rgba(41, 86, 164, 0.03)' : 'white',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    '&:hover': {
+                                        transform: isReview ? 'none' : 'translateY(-4px)',
+                                        boxShadow: isReview ? 'none' : 4
+                                    }
+                                }}
+                            >
+                                {paymentTab === 1 && (
+                                    <Box sx={{ position: 'absolute', top: -10, right: -10, bgcolor: 'primary.main', color: 'white', p: 1, borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <CheckCircleIcon fontSize="small" />
+                                    </Box>
+                                )}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                                    <Box sx={{ p: 1.5, bgcolor: '#e3f2fd', borderRadius: '12px', color: '#1976d2' }}>
+                                        <CreditCardIcon fontSize="large" />
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="h6" sx={{ fontWeight: 800 }}>Cartão</Typography>
+                                        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block' }}>Valor Integral</Typography>
+                                    </Box>
+                                </Box>
+                                <Typography variant="caption" color="textSecondary">
+                                    Pague com segurança via Mercado Pago ou similar.
+                                </Typography>
+                            </Paper>
+                        </Grid>
+                    </Grid>
+
+                    {/* Unified Action Area */}
+                    <Paper
+                        elevation={4}
+                        sx={{
+                            p: { xs: 3, md: 5 },
+                            borderRadius: '30px',
+                            background: 'linear-gradient(135deg, #ffffff 0%, #f8faff 100%)',
+                            border: '1px solid #e1e8f5',
+                            position: 'relative'
+                        }}
+                    >
+                        {paymentTab === 0 ? (
+                            /* Modern PIX Area */
+                            <Box>
+                                {isReview ? (
+                                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                                        <Box sx={{ mb: 2, display: 'inline-flex', p: 2, bgcolor: '#fff4e5', borderRadius: '50%' }}>
+                                            <Typography variant="h3">⏳</Typography>
+                                        </Box>
+                                        <Typography variant="h5" sx={{ fontWeight: 900, mb: 1 }}>Estamos conferindo!</Typography>
+                                        <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
+                                            Seu comprovante foi enviado com sucesso. Nossa equipe confirmará o pagamento em breve.
+                                        </Typography>
+                                        {comprovanteUrl && (
+                                            <Button
+                                                variant="outlined"
+                                                startIcon={<AttachFileIcon />}
+                                                href={comprovanteUrl}
+                                                target="_blank"
+                                                sx={{ borderRadius: '12px' }}
+                                            >
+                                                Ver Comprovante Enviado
+                                            </Button>
+                                        )}
+                                    </Box>
+                                ) : (
+                                    <Box sx={{ textAlign: 'center' }}>
+                                        <Typography variant="h5" sx={{ fontWeight: 900, color: 'success.main', mb: 3 }}>
+                                            🚀 Finalize com PIX agora
+                                        </Typography>
+
+                                        <Grid container spacing={4} alignItems="center">
+                                            <Grid item xs={12} md={5}>
+                                                {kitPayment?.pix_qrcode_url ? (
+                                                    <Box sx={{
+                                                        p: 2,
+                                                        bgcolor: 'white',
+                                                        borderRadius: '20px',
+                                                        boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
+                                                        display: 'inline-block',
+                                                        mx: 'auto'
+                                                    }}>
+                                                        <Box component="img" src={kitPayment.pix_qrcode_url} sx={{ width: '100%', maxWidth: 220, borderRadius: '12px' }} />
+                                                        <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>Escaneie no app do banco</Typography>
+                                                    </Box>
+                                                ) : (
+                                                    <Box sx={{ p: 4, bgcolor: '#f5f5f5', borderRadius: '20px', textAlign: 'center', maxWidth: 220, mx: 'auto' }}>
+                                                        <PixIcon sx={{ fontSize: 60, color: 'grey.300' }} />
+                                                        <Typography variant="body2" color="textSecondary">QR Code indisponível</Typography>
+                                                    </Box>
+                                                )}
+                                            </Grid>
+
+                                            <Grid item xs={12} md={7} sx={{ textAlign: 'left' }}>
+                                                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>Código Copia e Cola:</Typography>
+                                                <Box sx={{
+                                                    p: 2,
+                                                    bgcolor: '#f1f8e9',
+                                                    borderRadius: '15px',
+                                                    border: '2px dashed #81c784',
+                                                    mb: 3,
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 2
+                                                }}>
+                                                    <Typography variant="caption" sx={{ fontFamily: 'monospace', wordBreak: 'break-all', fontSize: '0.8rem', lineHeight: 1.4, textAlign: 'center' }}>
+                                                        {kitPayment?.pix_code || "Código indisponível"}
+                                                    </Typography>
+                                                    <Button
+                                                        fullWidth
+                                                        variant="contained"
+                                                        color="success"
+                                                        startIcon={<ContentCopyIcon />}
+                                                        onClick={() => {
+                                                            if (kitPayment?.pix_code) {
+                                                                navigator.clipboard.writeText(kitPayment.pix_code);
+                                                                enqueueSnackbar("Código PIX copiado!", { variant: 'success' });
+                                                            }
+                                                        }}
+                                                        sx={{ borderRadius: '10px', py: { xs: 1.2, sm: 1.5 }, fontWeight: 800 }}
+                                                    >
+                                                        Copiar Código PIX
+                                                    </Button>
+                                                </Box>
+
+
+                                            </Grid>
+                                        </Grid>
+                                    </Box>
+                                )}
+                            </Box>
+                        ) : (
+                            /* Modern Card Area */
+                            <Box sx={{ textAlign: 'center', py: { xs: 2, md: 4 } }}>
+                                <Box sx={{ mb: 3, display: 'inline-flex', p: 3, bgcolor: 'rgba(25, 118, 210, 0.1)', borderRadius: '50%' }}>
+                                    <CreditCardIcon sx={{ fontSize: 60, color: 'primary.main' }} />
+                                </Box>
+                                <Typography variant="h4" sx={{ fontWeight: 900, mb: 1 }}>Quase lá!</Typography>
+                                <Typography variant="body1" color="textSecondary" sx={{ mb: 4, maxWidth: '500px', mx: 'auto' }}>
+                                    Você será redirecionado para o nosso ambiente de pagamento seguro. Lá poderá parcelar sua compra e usar diversas bandeiras.
+                                </Typography>
+
+                                {kitPayment?.payment_link ? (
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        size="large"
+                                        href={`${kitPayment.payment_link}${kitPayment.payment_link.includes('?') ? '&' : '?'}external_reference=${order.id}`}
+                                        target="_blank"
+                                        sx={{
+                                            borderRadius: '20px',
+                                            px: { xs: 4, md: 10 },
+                                            py: 2.5,
+                                            fontSize: '1.2rem',
+                                            fontWeight: 900,
+                                            boxShadow: '0 15px 35px rgba(25, 118, 210, 0.3)',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '1px',
+                                            transition: 'all 0.3s',
+                                            '&:hover': {
+                                                transform: 'translateY(-5px)',
+                                                boxShadow: '0 20px 45px rgba(25, 118, 210, 0.4)',
+                                            }
+                                        }}
+                                    >
+                                        Ir para o Pagamento Seguro 💳
+                                    </Button>
+                                ) : (
+                                    <Alert severity="error" sx={{ borderRadius: '15px' }}>Link de pagamento indisponível para este kit.</Alert>
+                                )}
+
+                                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center', gap: 2, opacity: 0.6 }}>
+                                    <Box component="img" src="https://logospng.org/download/visa/logo-visa-4096.png" sx={{ height: 15 }} />
+                                    <Box component="img" src="https://logospng.org/download/mastercard/logo-mastercard-2048.png" sx={{ height: 15 }} />
+                                    <Box component="img" src="https://logospng.org/download/elo/logo-elo-2048.png" sx={{ height: 15 }} />
+                                </Box>
+                            </Box>
+                        )}
+                    </Paper>
+                </Box>
+            )}
 
             {/* Success Content (Only for Completed Orders) */}
             {isCompleted && (

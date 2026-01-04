@@ -54,11 +54,14 @@ const AdminClientes = () => {
     const [filteredClientes, setFilteredClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedCliente, setSelectedCliente] = useState(null);
+    const [selectedCliente, setSelectedCliente] = useState(null); // Para o modal de pedidos/detalhes
     const [clienteOrders, setClienteOrders] = useState([]);
     const [loadingOrders, setLoadingOrders] = useState(false);
-    const [openModal, setOpenModal] = useState(false);
+    const [openModal, setOpenModal] = useState(false); // Para o modal de cadastro/edição
     const [isEditing, setIsEditing] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [clienteToDelete, setClienteToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [saving, setSaving] = useState(false);
     const { enqueueSnackbar } = useSnackbar();
 
@@ -190,6 +193,14 @@ const AdminClientes = () => {
         try {
             const { password, role, id, ...profileData } = formState;
 
+            // Limpeza básica dos dados mascarados
+            const cleanProfileData = {
+                ...profileData,
+                phone: profileData.phone?.replace(/\D/g, ''),
+                cpf: profileData.cpf?.replace(/\D/g, ''),
+                address_cep: profileData.address_cep?.replace(/\D/g, '')
+            };
+
             // Call Edge Function to manage user and profile
             const { data, error } = await supabase.functions.invoke('admin-manage-user', {
                 body: {
@@ -200,14 +211,30 @@ const AdminClientes = () => {
                         password: password || undefined,
                         role: role
                     },
-                    profileData: profileData
+                    profileData: cleanProfileData
                 }
             });
 
             if (error) {
                 console.error('Invoke error:', error);
-                throw error;
+
+                let remoteError = 'Erro na comunicação com o servidor.';
+
+                // No caso do FunctionsHttpError do Supabase JS v2
+                if (error.context) {
+                    try {
+                        const body = await error.context.json();
+                        remoteError = body.error || remoteError;
+                    } catch (e) {
+                        remoteError = error.message || remoteError;
+                    }
+                } else {
+                    remoteError = error.message || remoteError;
+                }
+
+                throw new Error(remoteError);
             }
+
             if (data.error) throw new Error(data.error);
 
             enqueueSnackbar(`Cliente ${isEditing ? 'atualizado' : 'criado'} com sucesso!`, { variant: 'success' });
@@ -215,33 +242,54 @@ const AdminClientes = () => {
             loadData();
         } catch (error) {
             console.error('Detailed error saving cliente:', error);
-            const errorMsg = error.context?.error?.message || error.message || 'Erro inesperado ao salvar cliente.';
-            enqueueSnackbar(errorMsg, { variant: 'error' });
+            enqueueSnackbar(error.message || 'Erro inesperado ao salvar cliente.', { variant: 'error' });
         } finally {
             setSaving(false);
         }
     };
 
-    const handleDeleteCliente = async (e, id) => {
+    const handleDeleteClick = (e, cliente) => {
         if (e) e.stopPropagation();
-        if (!window.confirm('Tem certeza que deseja excluir este cliente? Isso removerá o acesso e o perfil.')) return;
+        setClienteToDelete(cliente);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!clienteToDelete) return;
+        setIsDeleting(true);
         try {
             const { data, error } = await supabase.functions.invoke('admin-manage-user', {
                 body: {
                     action: 'delete_user',
-                    userData: { id }
+                    userData: { id: clienteToDelete.id }
                 }
             });
 
-            if (error) throw error;
+            if (error) {
+                let remoteError = 'Erro na comunicação com o servidor.';
+                if (error.context) {
+                    try {
+                        const body = await error.context.json();
+                        remoteError = body.error || remoteError;
+                    } catch (e) {
+                        remoteError = error.message || remoteError;
+                    }
+                } else {
+                    remoteError = error.message || remoteError;
+                }
+                throw new Error(remoteError);
+            }
             if (data.error) throw new Error(data.error);
 
             enqueueSnackbar('Cliente e acesso excluídos com sucesso!', { variant: 'success' });
+            setDeleteConfirmOpen(false);
+            setClienteToDelete(null);
             loadData();
         } catch (error) {
             console.error('Error deleting cliente:', error);
-            const errorMsg = error.message || 'Erro ao excluir cliente.';
-            enqueueSnackbar(errorMsg, { variant: 'error' });
+            enqueueSnackbar(error.message || 'Erro ao excluir cliente.', { variant: 'error' });
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -380,7 +428,7 @@ const AdminClientes = () => {
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Excluir Cliente">
-                                            <IconButton onClick={(e) => handleDeleteCliente(e, cliente.id)} color="error" size="small">
+                                            <IconButton onClick={(e) => handleDeleteClick(e, cliente)} color="error" size="small">
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
@@ -443,16 +491,16 @@ const AdminClientes = () => {
                                             <ListItem alignItems="flex-start" sx={{ px: 0 }}>
                                                 <ListItemText
                                                     primary={`Pedido #${order.id.slice(0, 8)}`}
+                                                    secondaryTypographyProps={{ component: 'div' }}
                                                     secondary={
-                                                        <>
-                                                            <Typography component="span" variant="body2" color="textPrimary">
-                                                                R$ {parseFloat(order.total_amount).toFixed(2)}
+                                                        <Box sx={{ mt: 0.5 }}>
+                                                            <Typography component="div" variant="body2" color="textPrimary">
+                                                                R$ {parseFloat(order.total_amount).toFixed(2)} — {new Date(order.created_at).toLocaleDateString()}
                                                             </Typography>
-                                                            {` — ${new Date(order.created_at).toLocaleDateString()}`}
                                                             <Box mt={0.5}>
                                                                 <Chip label={order.status.toUpperCase()} size="small" variant="outlined" sx={{ fontSize: '0.625rem' }} />
                                                             </Box>
-                                                        </>
+                                                        </Box>
                                                     }
                                                 />
                                             </ListItem>
@@ -464,6 +512,35 @@ const AdminClientes = () => {
                         </DialogContent>
                     </>
                 )}
+            </Dialog>
+
+            {/* Dialog de Confirmação de Exclusão */}
+            <Dialog open={deleteConfirmOpen} onClose={() => !isDeleting && setDeleteConfirmOpen(false)}>
+                <DialogTitle sx={{ fontWeight: 'bold', color: 'error.main' }}>
+                    Excluir Cliente
+                </DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Tem certeza que deseja excluir <strong>{clienteToDelete?.name}</strong>?
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+                        Esta ação removerá permanentemente o perfil e o acesso (e-mail/senha) do sistema.
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ p: 3 }}>
+                    <Button onClick={() => setDeleteConfirmOpen(false)} disabled={isDeleting}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        onClick={handleConfirmDelete}
+                        color="error"
+                        variant="contained"
+                        disabled={isDeleting}
+                        startIcon={isDeleting ? <CircularProgress size={20} color="inherit" /> : <DeleteIcon />}
+                    >
+                        Excluir Definitivamente
+                    </Button>
+                </DialogActions>
             </Dialog>
 
             {/* Modal de Cadastro/Edição */}
