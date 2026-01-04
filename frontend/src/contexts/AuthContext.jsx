@@ -50,13 +50,16 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
-    const register = useCallback(async (email, password, metadata) => {
+    const register = useCallback(async (email, password, metadata, options = {}) => {
         setIsLoading(true);
         try {
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
-                options: { data: metadata }
+                options: {
+                    data: metadata,
+                    emailRedirectTo: options.redirectTo
+                }
             });
             if (error) throw error;
 

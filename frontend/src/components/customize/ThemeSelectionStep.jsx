@@ -9,9 +9,14 @@ const ThemeSelectionStep = ({ temas, categorias, selectedTheme, onSelectTheme, o
         setActiveTab(newValue);
     };
 
+    const activeTemas = temas.filter(t => t.is_active || t.is_ai_generated); // AI generated themes are usually active by default or handled specifically
+
     const filteredTemas = activeTab === 'all'
-        ? temas
-        : temas.filter(t => t.categoria_id === activeTab || t.categoria?.slug === activeTab);
+        ? activeTemas
+        : activeTemas.filter(t => t.categoria_id === activeTab || t.categoria?.slug === activeTab);
+
+    // Hide tabs if only one category exists besides "Todos"
+    const showTabs = categorias.length > 1;
 
     return (
         <Box>
@@ -30,59 +35,59 @@ const ThemeSelectionStep = ({ temas, categorias, selectedTheme, onSelectTheme, o
             </Typography>
 
             {/* Categorias Tabs */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4, display: 'flex', justifyContent: 'center' }}>
-                <Tabs
-                    value={activeTab}
-                    onChange={handleTabChange}
-                    variant="scrollable"
-                    scrollButtons="auto"
-                    sx={{
-                        '& .MuiTab-root': { fontWeight: 'bold', textTransform: 'none', fontSize: '1rem' }
-                    }}
-                >
-                    <Tab label="Todos" value="all" />
-                    {categorias.map(cat => (
-                        <Tab key={cat.id} label={cat.nome} value={cat.id} />
-                    ))}
-                </Tabs>
-            </Box>
-
-            <Box display="flex" flexWrap="wrap" justifyContent="center" gap={3}>
-                {/* Card para Criar com IA - Sempre visível no início ou em todos */}
-                {(activeTab === 'all' || activeTab === 'ia') && (
-                    <Card
-                        onClick={onOpenAiModal}
+            {showTabs && (
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4, display: 'flex', justifyContent: 'center' }}>
+                    <Tabs
+                        value={activeTab}
+                        onChange={handleTabChange}
+                        variant="scrollable"
+                        scrollButtons="auto"
                         sx={{
-                            cursor: "pointer",
-                            border: "2px dashed #9c27b0",
-                            borderRadius: "16px",
-                            width: "200px",
-                            transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                            backgroundColor: "#f3e5f5",
-                            "&:hover": {
-                                transform: "scale(1.05) translateY(-5px)",
-                                borderColor: "#7b1fa2",
-                                backgroundColor: "#e1bee7",
-                                boxShadow: '0 12px 24px rgba(156, 39, 176, 0.2)'
-                            },
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minHeight: '220px'
+                            '& .MuiTab-root': { fontWeight: 'bold', textTransform: 'none', fontSize: '1rem' }
                         }}
                     >
-                        <CardContent sx={{ p: 2, textAlign: 'center' }}>
-                            <AutoAwesomeIcon sx={{ fontSize: 60, color: "#9c27b0", mb: 2 }} />
-                            <Typography variant="h6" color="primary" sx={{ color: "#9c27b0", fontWeight: 'bold' }}>
-                                Criar com IA
-                            </Typography>
-                            <Typography variant="caption" display="block" color="textSecondary" sx={{ mt: 1 }}>
-                                Design único em segundos
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                )}
+                        <Tab label="Todos" value="all" />
+                        {categorias.map(cat => (
+                            <Tab key={cat.id} label={cat.nome} value={cat.id} />
+                        ))}
+                    </Tabs>
+                </Box>
+            )}
+
+            <Box display="flex" flexWrap="wrap" justifyContent="center" gap={3}>
+                {/* Card para Criar com IA - Sempre visível em todas as abas */}
+                <Card
+                    onClick={onOpenAiModal}
+                    sx={{
+                        cursor: "pointer",
+                        border: "2px dashed #9c27b0",
+                        borderRadius: "16px",
+                        width: "200px",
+                        transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                        backgroundColor: "#f3e5f5",
+                        "&:hover": {
+                            transform: "scale(1.05) translateY(-5px)",
+                            borderColor: "#7b1fa2",
+                            backgroundColor: "#e1bee7",
+                            boxShadow: '0 12px 24px rgba(156, 39, 176, 0.2)'
+                        },
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: '220px'
+                    }}
+                >
+                    <CardContent sx={{ p: 2, textAlign: 'center' }}>
+                        <AutoAwesomeIcon sx={{ fontSize: 60, color: "#9c27b0", mb: 2 }} />
+                        <Typography variant="h6" color="primary" sx={{ color: "#9c27b0", fontWeight: 'bold' }}>
+                            Criar com IA
+                        </Typography>
+                        <Typography variant="caption" display="block" color="textSecondary" sx={{ mt: 1 }}>
+                            Design único em segundos
+                        </Typography>
+                    </CardContent>
+                </Card>
 
                 {filteredTemas.map((theme) => (
                     <Fade in={true} key={theme.id}>

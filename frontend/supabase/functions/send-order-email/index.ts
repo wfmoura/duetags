@@ -124,47 +124,55 @@ serve(async (req) => {
     // TARGET: PRODUCTION
     if (target === 'production' || target === 'both') {
       const prodSubject = `🏷️ Produção: Novo Pedido #${order.id.slice(0, 8)} - ${userName}`
-      let imagesHtml = '<div class="section-title">📂 Arquivos para Produção</div>';
 
+      let imagesHtml = '<div class="section-title">📂 Arquivos para Produção</div>';
       if (originalAssetUrl) {
         imagesHtml += `
-                    <div class="technical-card">
-                        <strong>Arte Original (Alta Resolução)</strong><br/>
-                        <a href="${originalAssetUrl}" style="color: #26a69a; text-decoration: none;">Download Original</a><br/>
-                        <img src="${originalAssetUrl}" width="150" style="margin-top:10px; border:1px solid #ddd; border-radius:4px" />
-                    </div>`;
+          <div class="technical-card">
+            <strong>Arte Original (Alta Resolução)</strong><br/>
+            <a href="${originalAssetUrl}" style="color: #26a69a; text-decoration: none; font-weight: bold;">[Download Disponível]</a><br/>
+            <img src="${originalAssetUrl}" width="180" style="margin-top:10px; border:2px solid #26a69a; border-radius:8px" />
+          </div>`;
       }
+
       if (fullUrls.length > 0) {
-        imagesHtml += '<p><strong>Etiquetas Geradas:</strong></p><div style="display:flex; flex-wrap:wrap; gap:10px;">';
+        imagesHtml += '<p><strong>Etiquetas Geradas:</strong></p><div style="display:flex; flex-wrap:wrap; gap:12px;">';
         fullUrls.forEach((url: string, i: number) => {
           imagesHtml += `
-                        <div style="text-align:center;">
-                            <img src="${url}" width="180" style="border:1px solid #ddd; border-radius:4px; margin-bottom:5px;" /><br/>
-                            <a href="${url}" style="font-size:11px; color:#26a69a;">Imagem ${i + 1}</a>
-                        </div>`
+            <div style="text-align:center; background:#fff; padding:5px; border:1px solid #eee; border-radius:8px;">
+              <img src="${url}" width="180" style="border-radius:4px; margin-bottom:5px;" /><br/>
+              <a href="${url}" style="font-size:11px; color:#26a69a; font-weight:bold;">ETIQUETA ${i + 1}</a>
+            </div>`
         })
         imagesHtml += '</div>';
       }
 
       const prodInner = `
-                <span class="order-id">Pedido ID: #${order.id}</span>
-                <p>Olá Equipe DueTags! Temos um novo pedido pronto para entrar na fila de produção.</p>
-                <div class="section-title">👤 Dados do Cliente</div>
-                <div class="info-grid">
-                    <div class="info-row"><span class="info-label">Nome:</span><span class="info-value">${userName}</span></div>
-                    <div class="info-row"><span class="info-label">E-mail:</span><span class="info-value">${userEmail}</span></div>
-                    <div class="info-row"><span class="info-label">Telefone:</span><span class="info-value">${userPhone}</span></div>
-                </div>
-                <div class="section-title">📦 Detalhes do Pedido</div>
-                <div class="info-grid">
-                    <div class="info-row"><span class="info-label">Kit:</span><span class="info-value">${order.kit_nome || 'N/A'}</span></div>
-                    <div class="info-row"><span class="info-label">Data:</span><span class="info-value">${purchaseDate}</span></div>
-                </div>
-                ${imagesHtml}
-                <div class="button-container">
-                    <a href="https://duetags.vercel.app/pedidos" class="button">Painel Admin</a>
-                </div>
-            `
+        <span class="order-id">Pedido ID: #${order.id}</span>
+        <p style="font-size: 16px;">Olá Equipe de Produção! Temos um novo pedido customizado pronto para processamento.</p>
+        
+        <div class="section-title">👤 Informações do Cliente</div>
+        <div class="info-grid">
+          <div class="info-row"><span class="info-label">Nome Completo:</span><span class="info-value">${userName}</span></div>
+          <div class="info-row"><span class="info-label">E-mail de Contato:</span><span class="info-value">${userEmail}</span></div>
+          <div class="info-row"><span class="info-label">WhatsApp:</span><span class="info-value">${userPhone}</span></div>
+        </div>
+
+        <div class="section-title">📦 Detalhes da Venda</div>
+        <div class="info-grid">
+          <div class="info-row"><span class="info-label">Kit Escolhido:</span><span class="info-value" style="color: #26a69a;">${order.kit_nome || 'Personalizado'}</span></div>
+          <div class="info-row"><span class="info-label">Data da Compra:</span><span class="info-value">${purchaseDate}</span></div>
+          <div class="info-row"><span class="info-label">Valor Total:</span><span class="info-value">R$ ${Number(order.total_amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
+          <div class="info-row"><span class="info-label">Pagamento:</span><span class="info-value">${(order.payment_method || 'PIX').toUpperCase()}</span></div>
+        </div>
+
+        ${imagesHtml}
+
+        <div class="button-container">
+          <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Para ver todos os metadados, reenviar e-mails ou atualizar o status, acesse os detalhes completos:</p>
+          <a href="https://duetags.vercel.app/admin/order/${order.id}" class="button">Ver Detalhes do Pedido no Painel</a>
+        </div>
+      `
 
       let adminEmails = ['wfmoura2@gmail.com']
       const { data: settings } = await supabaseClient.from('system_settings').select('value').eq('key', 'order_notification_emails').single()

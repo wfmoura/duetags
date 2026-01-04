@@ -193,11 +193,11 @@ const Header = () => {
             {user ? (
               <Box display="flex" alignItems="center" gap={1}>
                 <Typography variant="body2" sx={{ display: { xs: 'none', lg: 'block' }, color: darkTeal, fontWeight: 700 }}>
-                  Olá, {user.email}
+                  Olá, {user.name || user.email}
                 </Typography>
                 <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0, ml: 1 }}>
                   <Avatar sx={{ width: 38, height: 38, bgcolor: darkTeal, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                    {user.email ? user.email[0].toUpperCase() : 'U'}
+                    {(user.name || user.email)[0].toUpperCase()}
                   </Avatar>
                 </IconButton>
               </Box>

@@ -22,7 +22,7 @@ export const ProductProvider = ({ children }) => {
                 { data: kitsData, error: kitsError },
                 { data: etiquetasData, error: etiquetasError }
             ] = await Promise.all([
-                supabase.from('temas').select('*, categoria:categoria_id(*)').eq('is_active', true).order('nome'),
+                supabase.from('temas').select('*, categoria:categoria_id(*)').order('nome'),
                 supabase.from('tema_categorias').select('*').order('nome'),
                 supabase.from('kits').select(`
                     id, 

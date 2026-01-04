@@ -8,6 +8,9 @@ import {
     Container,
     IconButton
 } from '@mui/material';
+import {
+    AutoAwesome as AutoAwesomeIcon
+} from '@mui/icons-material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import LabelIcon from '@mui/icons-material/Label';
 import InventoryIcon from '@mui/icons-material/Inventory';
@@ -18,6 +21,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import LoyaltyIcon from '@mui/icons-material/Loyalty';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import { useNavigate } from 'react-router-dom';
 
 // Admin Components (To be created)
@@ -28,6 +32,9 @@ import AdminAnalytics from '../../components/admin/AdminAnalytics';
 import AdminLogs from '../../components/admin/AdminLogs';
 import AdminCoupons from '../../components/admin/AdminCoupons';
 import AdminClientes from '../../components/admin/AdminClientes';
+import AdminTemas from '../../components/admin/AdminTemas';
+import AdminCreateThemeAI from '../../components/admin/AdminCreateThemeAI';
+import AdminTestFlow from '../../components/admin/AdminTestFlow';
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -47,6 +54,16 @@ function TabPanel(props) {
         </div>
     );
 }
+
+const ThemesContainer = () => {
+    const [view, setView] = useState('list'); // 'list' or 'create-ai'
+
+    if (view === 'create-ai') {
+        return <AdminCreateThemeAI onBack={() => setView('list')} />;
+    }
+
+    return <AdminTemas onGoToAiCreation={() => setView('create-ai')} />;
+};
 
 function AdminDashboard() {
     const [tabValue, setTabValue] = useState(0);
@@ -105,8 +122,10 @@ function AdminDashboard() {
                         <Tab icon={<LabelIcon />} iconPosition="start" label="Etiquetas (CRUD)" sx={{ py: 2 }} />
                         <Tab icon={<InventoryIcon />} iconPosition="start" label="Kits (CRUD)" sx={{ py: 2 }} />
                         <Tab icon={<PeopleIcon />} iconPosition="start" label="Clientes" sx={{ py: 2 }} />
+                        <Tab icon={<AutoAwesomeIcon />} iconPosition="start" label="Temas" sx={{ py: 2 }} />
                         <Tab icon={<SettingsIcon />} iconPosition="start" label="Configurações" sx={{ py: 2 }} />
                         <Tab icon={<LoyaltyIcon />} iconPosition="start" label="Cupons" sx={{ py: 2 }} />
+                        <Tab icon={<BugReportIcon />} iconPosition="start" label="Testes de Fluxo" sx={{ py: 2 }} />
                         <Tab icon={<ListAltIcon />} iconPosition="start" label="Logs de Acesso" sx={{ py: 2 }} />
                     </Tabs>
 
@@ -124,12 +143,19 @@ function AdminDashboard() {
                             <AdminClientes />
                         </TabPanel>
                         <TabPanel value={tabValue} index={4}>
-                            <AdminSettings />
+                            {/* Inner state for Themes management */}
+                            <ThemesContainer onTabChange={setTabValue} />
                         </TabPanel>
                         <TabPanel value={tabValue} index={5}>
-                            <AdminCoupons />
+                            <AdminSettings />
                         </TabPanel>
                         <TabPanel value={tabValue} index={6}>
+                            <AdminCoupons />
+                        </TabPanel>
+                        <TabPanel value={tabValue} index={7}>
+                            <AdminTestFlow />
+                        </TabPanel>
+                        <TabPanel value={tabValue} index={8}>
                             <AdminLogs />
                         </TabPanel>
                     </Box>

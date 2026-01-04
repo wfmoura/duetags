@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { AppProvider } from './contexts/AppContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
@@ -11,6 +11,7 @@ import Theme from './pages/Theme';
 import Customize from './pages/Customize';
 import Pedidos from './pages/Pedidos';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminOrderDetail from './pages/admin/AdminOrderDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -57,6 +58,15 @@ import { useAuth } from './contexts/AuthContext';
 const AppRoutes = () => {
   const { user } = useAuth();
   const isAdmin = user && user.role === "admin";
+  const navigate = useNavigate();
+
+  // Redirect to Customize if there is a pending customization when landing on home
+  React.useEffect(() => {
+    const hasPending = localStorage.getItem('pendingCustomization');
+    if (hasPending && window.location.pathname === '/') {
+      navigate('/Customize');
+    }
+  }, [navigate]);
 
   return (
     <Routes>
@@ -71,6 +81,7 @@ const AppRoutes = () => {
       <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
       <Route path="/pedidos" element={isAdmin ? <Pedidos /> : <Box p={4} textAlign="center"><Typography variant="h5">Acesso Restrito</Typography><Button href="/" sx={{ mt: 2 }}>Voltar para Home</Button></Box>} />
       <Route path="/admin" element={isAdmin ? <AdminDashboard /> : <Box p={4} textAlign="center"><Typography variant="h5">Acesso Restrito</Typography><Button href="/" sx={{ mt: 2 }}>Voltar para Home</Button></Box>} />
+      <Route path="/admin/order/:orderId" element={isAdmin ? <AdminOrderDetail /> : <Box p={4} textAlign="center"><Typography variant="h5">Acesso Restrito</Typography><Button href="/" sx={{ mt: 2 }}>Voltar para Home</Button></Box>} />
       <Route path="/order/:orderId" element={<ProtectedRoute><OrderPage /></ProtectedRoute>} />
       <Route path="/print/:orderId" element={<ProtectedRoute><PrintPage /></ProtectedRoute>} />
       <Route path="/acompanhamento-pedidos" element={<AcompanhamentoPedidos />} />

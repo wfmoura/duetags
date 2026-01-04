@@ -661,6 +661,9 @@ const Pedidos = () => {
         onClose={() => setAnchorEl(null)}
         PaperProps={{ sx: { borderRadius: 2, minWidth: 200, mt: 1, boxShadow: '0 4px 20px rgba(0,0,0,0.1)' } }}
       >
+        <MenuItem onClick={() => { window.location.href = `/admin/order/${activeOrderMenu?.id}`; setAnchorEl(null); }}>
+          <VisibilityIcon sx={{ mr: 2, color: '#1a237e' }} /> Ver Detalhes do Pedido
+        </MenuItem>
         <MenuItem onClick={() => { downloadOrderZip(activeOrderMenu); setAnchorEl(null); }}>
           <FolderZipIcon sx={{ mr: 2, color: '#fbc02d' }} /> Baixar Pacote ZIP
         </MenuItem>

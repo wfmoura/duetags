@@ -137,6 +137,11 @@ function Register() {
         submissionData.address_state = '';
       }
 
+      const hasPending = localStorage.getItem('pendingCustomization');
+      const redirectTo = hasPending
+        ? `${window.location.origin}/Customize`
+        : `${window.location.origin}/`;
+
       await register(submissionData.email, submissionData.password, {
         name: submissionData.name,
         phone: submissionData.phone,
@@ -149,7 +154,7 @@ function Register() {
         address_city: submissionData.address_city,
         address_state: submissionData.address_state,
         role: submissionData.role
-      });
+      }, { redirectTo });
 
       alert('Cadastro realizado com sucesso! Verifique seu email para confirmar.');
       navigate('/login', { state: location.state });
