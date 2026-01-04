@@ -81,6 +81,58 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    const signInWithSocial = useCallback(async (provider) => {
+        setIsLoading(true);
+        try {
+            const hasPending = localStorage.getItem('pendingCustomization');
+            const redirectTo = hasPending
+                ? `${window.location.origin}/Customize`
+                : `${window.location.origin}/`;
+
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider,
+                options: {
+                    redirectTo,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent',
+                    }
+                }
+            });
+            if (error) throw error;
+        } catch (error) {
+            console.error(`${provider} login error:`, error);
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    const updateUserProfile = useCallback(async (metadata) => {
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase.auth.updateUser({
+                data: metadata
+            });
+            if (error) throw error;
+
+            setUser(prev => ({
+                ...prev,
+                ...data.user.user_metadata,
+                name: data.user.user_metadata?.name,
+                phone: data.user.user_metadata?.phone,
+                cpf: data.user.user_metadata?.cpf
+            }));
+
+            return data.user;
+        } catch (error) {
+            console.error('Update profile error:', error);
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
     const logout = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -132,7 +184,7 @@ export const AuthProvider = ({ children }) => {
     }, [handleLogout]);
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, register, isLoading, isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{ user, token, login, logout, register, signInWithSocial, updateUserProfile, isLoading, isAuthenticated: !!user }}>
             {children}
         </AuthContext.Provider>
     );

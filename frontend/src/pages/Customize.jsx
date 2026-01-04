@@ -38,6 +38,7 @@ import ReviewStep from "../components/customize/ReviewStep";
 import OnboardingTour from '../components/customize/OnboardingTour';
 import Etiquetas from "../components/Etiquetas";
 import DeliveryStep from "../components/customize/DeliveryStep";
+import MaskedInput from "../components/MaskedInput";
 
 function Customize() {
   const location = useLocation();
@@ -50,7 +51,7 @@ function Customize() {
     customizations, setCustomizations,
     showMessage
   } = useContext(AppContext);
-  const { user } = useAuth();
+  const { user, updateUserProfile } = useAuth();
   const { kits, temas, categorias, etiquetas, fontesDisponiveis, isLoading: isProductsLoading } = useProduct();
   const { clearCart } = useCart();
 
@@ -98,6 +99,9 @@ function Customize() {
   const [deliveryMethod, setDeliveryMethod] = useState("pickup");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [profileCompletionOpen, setProfileCompletionOpen] = useState(false);
+  const [profileCompletionData, setProfileCompletionData] = useState({ phone: '', cpf: '' });
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const steps = ["Escolher Estilo", "Personalizar", "Finalizar Pedido"];
 
@@ -376,6 +380,16 @@ function Customize() {
 
       showMessage("Faça login ou cadastre-se para finalizar seu pedido.", "info");
       navigate("/login", { state: { from: "/Customize", message: "Faça login para finalizar seu pedido." } });
+      return;
+    }
+
+    // Check for missing profile data (Phone, CPF) - especially for Social Login users
+    if (!user.phone || !user.cpf) {
+      setProfileCompletionData({
+        phone: user.phone || '',
+        cpf: user.cpf || ''
+      });
+      setProfileCompletionOpen(true);
       return;
     }
     setIsSaving(true);
@@ -705,6 +719,33 @@ function Customize() {
       setIsSaving(false);
       setIsExporting(false);
       setLoadingMessage("");
+    }
+  };
+
+  const handleProfileSubmit = async () => {
+    const rawPhone = profileCompletionData.phone.replace(/\D/g, '');
+    if (!rawPhone || rawPhone.length < 10) {
+      showMessage("Por favor, insira um telefone válido com DDD.", "error");
+      return;
+    }
+
+    setProfileLoading(true);
+    try {
+      await updateUserProfile({
+        phone: profileCompletionData.phone,
+        cpf: profileCompletionData.cpf
+      });
+
+      setProfileCompletionOpen(false);
+      showMessage("Dados atualizados com sucesso!", "success");
+
+      // Resume the order process
+      handleFinalizar();
+    } catch (error) {
+      console.error("Profile update error:", error);
+      showMessage("Erro ao atualizar perfil. Tente novamente.", "error");
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -1231,7 +1272,71 @@ function Customize() {
           </Typography>
         </DialogContent>
       </Dialog>
-    </Box>
+
+      {/* Profile Completion Dialog for Social Login Users */}
+      <Dialog
+        open={profileCompletionOpen}
+        onClose={() => !profileLoading && setProfileCompletionOpen(false)}
+        PaperProps={{ sx: { borderRadius: '24px', p: 1 } }}
+      >
+        <DialogTitle sx={{ fontWeight: '800', textAlign: 'center', pb: 0 }}>
+          Quase lá! ✨
+        </DialogTitle>
+        <DialogContent sx={{ textAlign: 'center' }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Detectamos que seu perfil está incompleto. Precisamos do seu Celular e CPF para garantir a entrega e faturamento do seu pedido.
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="Celular (WhatsApp)"
+              fullWidth
+              required
+              value={profileCompletionData.phone}
+              onChange={(e) => setProfileCompletionData(prev => ({ ...prev, phone: e.target.value }))}
+              InputProps={{
+                inputComponent: MaskedInput,
+                inputProps: { mask: '(00) 00000-0000' },
+              }}
+              helperText="Usaremos para enviar o código de rastreio"
+            />
+            <TextField
+              label="CPF"
+              fullWidth
+              value={profileCompletionData.cpf}
+              onChange={(e) => setProfileCompletionData(prev => ({ ...prev, cpf: e.target.value }))}
+              InputProps={{
+                inputComponent: MaskedInput,
+                inputProps: { mask: '000.000.000-00' },
+              }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={() => setProfileCompletionOpen(false)}
+            disabled={profileLoading}
+            sx={{ color: 'text.secondary' }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleProfileSubmit}
+            disabled={profileLoading}
+            sx={{
+              borderRadius: '12px',
+              px: 4,
+              fontWeight: 'bold',
+              bgcolor: '#bab3ff',
+              color: '#4a148c',
+              '&:hover': { bgcolor: '#9c92f0' }
+            }}
+          >
+            {profileLoading ? <CircularProgress size={24} /> : "SALVAR E FINALIZAR"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box >
   );
 }
 
