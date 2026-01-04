@@ -81,6 +81,7 @@ const Pedidos = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteStorageFiles, setDeleteStorageFiles] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(null); // 'orderId-target'
 
   useEffect(() => {
     const newSocket = io('http://localhost:3000', {
@@ -253,19 +254,36 @@ const Pedidos = () => {
   };
 
   const handleResendEmail = async (orderId, target) => {
+    const resendKey = `${orderId}-${target}`;
     try {
-      enqueueSnackbar(`Enviando e-mail de ${target === 'client' ? 'confirmação' : 'produção'}...`, { variant: 'info' });
+      setResendingEmail(resendKey);
+      enqueueSnackbar(`Solicitando reenvio de e-mail (${target === 'client' ? 'Cliente' : 'Produção'})...`, {
+        variant: 'info',
+        autoHideDuration: 2000
+      });
 
-      const { data, error } = await supabase.functions.invoke('send-order-email', {
+      const { data, error } = await supabase.functions.invoke('send-order-email-v2', {
         body: { orderId, target }
       });
 
       if (error) throw error;
 
-      enqueueSnackbar(`E-mail enviado com sucesso!`, { variant: 'success' });
+      if (data?.success) {
+        enqueueSnackbar(`E-mail enviado com sucesso!`, {
+          variant: 'success',
+          autoHideDuration: 5000
+        });
+      } else {
+        enqueueSnackbar(`Erro no servidor: ${data?.error || 'Erro desconhecido'}`, {
+          variant: 'error',
+          autoHideDuration: 8000
+        });
+      }
     } catch (error) {
       console.error('Erro ao reenviar e-mail:', error);
-      enqueueSnackbar('Erro ao enviar e-mail. Verifique se a função está publicada.', { variant: 'error' });
+      enqueueSnackbar(`Erro de conexão: ${error.message || 'Verifique sua internet ou VPN'}`, { variant: 'error' });
+    } finally {
+      setResendingEmail(null);
     }
   };
 
@@ -550,21 +568,23 @@ const Pedidos = () => {
                         <Button
                           variant="outlined"
                           size="small"
-                          startIcon={<EmailIcon />}
+                          startIcon={resendingEmail === `${pedido.id}-client` ? <CircularProgress size={16} /> : <EmailIcon />}
                           onClick={() => handleResendEmail(pedido.id, 'client')}
+                          disabled={!!resendingEmail}
                           sx={{ borderRadius: 20, textTransform: 'none', fontWeight: 600 }}
                         >
-                          Reenviar Cliente
+                          {resendingEmail === `${pedido.id}-client` ? 'Enviando...' : 'Reenviar Cliente'}
                         </Button>
                         <Button
                           variant="outlined"
                           size="small"
                           color="secondary"
-                          startIcon={<EngineeringIcon />}
+                          startIcon={resendingEmail === `${pedido.id}-production` ? <CircularProgress size={16} color="inherit" /> : <EngineeringIcon />}
                           onClick={() => handleResendEmail(pedido.id, 'production')}
+                          disabled={!!resendingEmail}
                           sx={{ borderRadius: 20, textTransform: 'none', fontWeight: 600 }}
                         >
-                          Produção
+                          {resendingEmail === `${pedido.id}-production` ? 'Enviando...' : 'Produção'}
                         </Button>
                         <Button
                           variant="contained"

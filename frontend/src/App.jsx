@@ -26,22 +26,26 @@ import AcompanhamentoPedidos from './pages/AcompanhamentoPedidos';
 import OrderPage from './pages/OrderPage';
 import { AppContext } from './contexts/AppContext';
 
+import { SnackbarProvider } from 'notistack';
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <AuthProvider>
-        <ProductProvider>
-          <CartProvider>
-            <AppProvider>
-              <Router>
-                <Header />
-                <AppRoutes />
-                <Chatbot />
-              </Router>
-            </AppProvider>
-          </CartProvider>
-        </ProductProvider>
-      </AuthProvider>
+      <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
+        <AuthProvider>
+          <ProductProvider>
+            <CartProvider>
+              <AppProvider>
+                <Router>
+                  <Header />
+                  <AppRoutes />
+                  <Chatbot />
+                </Router>
+              </AppProvider>
+            </CartProvider>
+          </ProductProvider>
+        </AuthProvider>
+      </SnackbarProvider>
     </ThemeProvider>
   );
 }
@@ -67,7 +71,7 @@ const AppRoutes = () => {
       <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
       <Route path="/pedidos" element={isAdmin ? <Pedidos /> : <Box p={4} textAlign="center"><Typography variant="h5">Acesso Restrito</Typography><Button href="/" sx={{ mt: 2 }}>Voltar para Home</Button></Box>} />
       <Route path="/admin" element={isAdmin ? <AdminDashboard /> : <Box p={4} textAlign="center"><Typography variant="h5">Acesso Restrito</Typography><Button href="/" sx={{ mt: 2 }}>Voltar para Home</Button></Box>} />
-      <Route path="/order/:orderId" element={<ProtectedRoute><OrderPage /></ProtectedRoute>} />
+      <Route path="/order/:orderId" element={<OrderPage />} />
       <Route path="/print/:orderId" element={<ProtectedRoute><PrintPage /></ProtectedRoute>} />
       <Route path="/acompanhamento-pedidos" element={<AcompanhamentoPedidos />} />
       <Route path="*" element={<div>Página não encontrada (404)</div>} />

@@ -644,11 +644,6 @@ function Customize() {
         });
       }
 
-      if (insertError) {
-        console.error("Erro completo do Supabase:", insertError);
-        throw new Error(`Erro ao gravar no banco: ${insertError.message} (${insertError.code})`);
-      }
-
       // Save address to profile if logged in
       if (user && deliveryMethod === 'uber') {
         await supabase.from('profiles').update({
@@ -669,7 +664,7 @@ function Customize() {
       hardReset();
 
       setLoadingMessage("Finalizado!");
-      showMessage(mode === 'update' ? "Pedido atualizado!" : `Olá ${user?.user_metadata?.name || 'Cliente'}, seu pedido foi criado com sucesso!`, "success");
+      showMessage(mode === 'update' ? "Pedido atualizado!" : `Olá ${user?.name || 'Cliente'}, seu pedido foi criado com sucesso!`, "success");
       navigate(`/order/${finalOrder.id}`);
 
       setLoadingMessage(mode === 'update' ? "✅ Design atualizado!" : "✅ Equipe de produção notificada!");
@@ -684,7 +679,7 @@ function Customize() {
 
       setLoadingMessage(
         <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="h6" gutterBottom>Olá {user?.user_metadata?.name || 'Cliente'}! Seu pedido foi realizado!</Typography>
+          <Typography variant="h6" gutterBottom>Olá {user?.name || 'Cliente'}! Seu pedido foi realizado!</Typography>
           {deliveryMethod === 'uber' && (
             <Button
               variant="contained"
