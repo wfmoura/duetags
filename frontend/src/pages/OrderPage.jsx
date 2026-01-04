@@ -24,7 +24,10 @@ import {
     LocalOffer as TagIcon,
     CheckCircle as CheckCircleIcon,
     CloudUpload as CloudUploadIcon,
-    AttachFile as AttachFileIcon
+    AttachFile as AttachFileIcon,
+    Info as InfoIcon,
+    AccessTime as AccessTimeIcon,
+    LocationOn as LocationOnIcon
 } from '@mui/icons-material';
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -261,7 +264,57 @@ const OrderPage = () => {
 
     const isPending = order?.status === 'pending';
     const isReview = order?.status === 'review';
-    const isCompleted = order?.status === 'completed';
+    // Nova lógica: "Confirmado" agora é tudo que não for pendente ou review (ou rascunho se existisse)
+    const isConfirmed = order?.status && !['pending', 'review', 'draft'].includes(order.status);
+
+    const getStatusHeaderInfo = () => {
+        switch (order?.status) {
+            case 'payment_confirmed':
+                return {
+                    icon: <CheckCircleIcon color="success" fontSize="large" />,
+                    title: "Pagamento Confirmado!",
+                    msg: "Recebemos seu pagamento. Em breve daremos início à produção."
+                };
+            case 'in_production':
+                return {
+                    icon: <CheckCircleIcon color="success" fontSize="large" />,
+                    title: "Pedido em Produção!",
+                    msg: "Obrigado! Seu pedido já está sendo produzido com carinho. ✨"
+                };
+            case 'awaiting_pickup':
+                return {
+                    icon: <CheckCircleIcon color="success" fontSize="large" />,
+                    title: "Pronto para Retirada!",
+                    msg: "Oba! Seu pedido está pronto. Você já pode vir buscar!"
+                };
+            case 'shipped':
+                return {
+                    icon: <CheckCircleIcon color="success" fontSize="large" />,
+                    title: "Pedido Enviado!",
+                    msg: "Seu pedido saiu para entrega! Acompanhe a chegada. 🚀"
+                };
+            case 'delivered':
+                return {
+                    icon: <CheckCircleIcon color="success" fontSize="large" />,
+                    title: "Pedido Entregue!",
+                    msg: "Esperamos que você ame suas novas etiquetas! ❤️"
+                };
+            case 'review':
+                return {
+                    icon: "⏳",
+                    title: "Pagamento em Análise",
+                    msg: "Recebemos seu comprovante. Nossa equipe irá conferir em instantes."
+                };
+            default:
+                return {
+                    icon: "🎉",
+                    title: "Pedido Recebido!",
+                    msg: "Seu pedido foi registrado e está aguardando o pagamento."
+                };
+        }
+    };
+
+    const header = getStatusHeaderInfo();
 
     if (isLoading) {
         return (
@@ -286,15 +339,11 @@ const OrderPage = () => {
             {/* Header */}
             <Box sx={{ textAlign: 'center', mb: 4 }}>
                 <Typography variant="h4" gutterBottom sx={{ fontWeight: "bold", display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                    {isCompleted ? <CheckCircleIcon color="success" fontSize="large" /> : (isReview ? "⏳" : "🎉")}
-                    {isCompleted ? "Pedido Confirmado!" : (isReview ? "Pagamento em Análise" : "Pedido Recebido!")}
+                    {header.icon}
+                    {header.title}
                 </Typography>
                 <Typography variant="body1" color="textSecondary">
-                    {isCompleted
-                        ? "Obrigado! Seu pedido está em produção."
-                        : (isReview
-                            ? "Recebemos seu comprovante. Nossa equipe irá conferir em instantes."
-                            : "Seu pedido foi registrado e está aguardando o pagamento.")}
+                    {header.msg}
                 </Typography>
             </Box>
 
@@ -323,6 +372,41 @@ const OrderPage = () => {
                         <Typography variant="body2" color="textSecondary">
                             <strong>Entrega:</strong> {order.delivery_method === 'pickup' ? 'Retirada (Setor Noroeste)' : 'Uber (por conta do cliente)'}
                         </Typography>
+
+                        {/* Prazo e Informações de Entrega */}
+                        <Box sx={{ mt: 3, p: 2, bgcolor: '#f8faff', borderRadius: '12px', border: '1px solid #e1e8f5' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, color: 'primary.main' }}>
+                                <AccessTimeIcon fontSize="small" />
+                                <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Prazo de Produção e Entrega</Typography>
+                            </Box>
+                            <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                                3 a 5 dias úteis.
+                            </Typography>
+
+                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, color: 'primary.main' }}>
+                                <InfoIcon fontSize="small" sx={{ mt: 0.3 }} />
+                                <Box>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Informações de Entrega</Typography>
+                                    <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+                                        {order.delivery_method === 'pickup'
+                                            ? 'Sua retirada será combinada por agendamento assim que o pedido for produzido.'
+                                            : 'O frete/envio será combinado e agendado com você assim que o pedido for produzido.'}
+                                    </Typography>
+
+                                    {order.delivery_method === 'pickup' && (
+                                        <Button
+                                            variant="text"
+                                            size="small"
+                                            startIcon={<LocationOnIcon />}
+                                            onClick={() => window.open('https://maps.google.com/?q=SQNW+103+Bloco+A+Setor+Noroeste+Brasilia+DF', '_blank')}
+                                            sx={{ mt: 1, textTransform: 'none', fontWeight: 'bold', p: 0 }}
+                                        >
+                                            Ver Local de Retirada (SQNW 103 Bloco A)
+                                        </Button>
+                                    )}
+                                </Box>
+                            </Box>
+                        </Box>
                     </Box>
                     <Box sx={{ textAlign: { xs: 'center', sm: 'right' } }}>
                         <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold' }}>
@@ -338,7 +422,7 @@ const OrderPage = () => {
 
             </Paper>
 
-            {/* Payment Selection & Instructions */}
+            {/* Payment Selection & Instructions - Only visible when PENDING or REVIEW */}
             {(isPending || isReview) && (
                 <Box sx={{ mb: 6 }}>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 800, textAlign: 'center', mb: 3 }}>
@@ -378,11 +462,19 @@ const OrderPage = () => {
                                     </Box>
                                     <Box>
                                         <Typography variant="h6" sx={{ fontWeight: 800 }}>PIX</Typography>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary' }}>
+                                                R$ {order.kit_preco?.toFixed(2).replace('.', ',')}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                                                R$ {calculatePixPrice(order.kit_preco || 0).toFixed(2).replace('.', ',')}
+                                            </Typography>
+                                        </Box>
                                         <Chip
                                             label="-5% DE DESCONTO"
                                             size="small"
                                             color="success"
-                                            sx={{ fontWeight: 900, fontSize: '0.65rem', height: 20 }}
+                                            sx={{ fontWeight: 900, fontSize: '0.65rem', height: 20, mt: 0.5 }}
                                         />
                                     </Box>
                                 </Box>
@@ -586,8 +678,8 @@ const OrderPage = () => {
                 </Box>
             )}
 
-            {/* Success Content (Only for Completed Orders) */}
-            {isCompleted && (
+            {/* Success Content (Visible after Payment is Confirmed) */}
+            {isConfirmed && (
                 <Grid container spacing={4} sx={{ mb: 4 }}>
                     {/* Sharing Section */}
                     <Grid item xs={12} md={6}>

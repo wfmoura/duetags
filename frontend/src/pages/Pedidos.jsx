@@ -289,9 +289,11 @@ const Pedidos = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed': return 'success';
-      case 'producao': return 'warning';
-      case 'sent': return 'info';
+      case 'payment_confirmed': return 'success';
+      case 'in_production': return 'warning';
+      case 'awaiting_pickup': return 'info';
+      case 'shipped': return 'info';
+      case 'delivered': return 'success';
       case 'draft': return 'default';
       default: return 'primary';
     }
@@ -300,9 +302,11 @@ const Pedidos = () => {
   const getStatusLabel = (status) => {
     switch (status) {
       case 'pending': return 'Pendente';
-      case 'producao': return 'Em Produção';
-      case 'completed': return 'Concluído';
-      case 'sent': return 'Enviado';
+      case 'payment_confirmed': return 'Pagamento Confirmado';
+      case 'in_production': return 'Em Produção';
+      case 'awaiting_pickup': return 'Aguardando Retirada';
+      case 'shipped': return 'Enviado';
+      case 'delivered': return 'Entregue';
       case 'draft': return 'Rascunho';
       default: return status;
     }
@@ -348,9 +352,11 @@ const Pedidos = () => {
           >
             <MenuItem value="">Todos os Status</MenuItem>
             <MenuItem value="pending">Pendente</MenuItem>
-            <MenuItem value="producao">Em produção</MenuItem>
-            <MenuItem value="completed">Concluído</MenuItem>
-            <MenuItem value="sent">Enviado</MenuItem>
+            <MenuItem value="payment_confirmed">Pagamento Confirmado</MenuItem>
+            <MenuItem value="in_production">Em produção</MenuItem>
+            <MenuItem value="awaiting_pickup">Aguardando Retirada</MenuItem>
+            <MenuItem value="shipped">Enviado</MenuItem>
+            <MenuItem value="delivered">Entregue</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -448,9 +454,11 @@ const Pedidos = () => {
                             sx={{ height: 36, borderRadius: 2, bgcolor: '#f5f5f5' }}
                           >
                             <MenuItem value="pending">Pendente</MenuItem>
-                            <MenuItem value="producao">Produção</MenuItem>
-                            <MenuItem value="completed">Concluído</MenuItem>
-                            <MenuItem value="sent">Enviado</MenuItem>
+                            <MenuItem value="payment_confirmed">Pagamento Confirmado</MenuItem>
+                            <MenuItem value="in_production">Em produção</MenuItem>
+                            <MenuItem value="awaiting_pickup">Aguardando Retirada</MenuItem>
+                            <MenuItem value="shipped">Enviado</MenuItem>
+                            <MenuItem value="delivered">Entregue</MenuItem>
                           </Select>
                         </FormControl>
                         <IconButton onClick={(e) => { setAnchorEl(e.currentTarget); setActiveOrderMenu(pedido); }}>

@@ -174,8 +174,20 @@ const AcompanhamentoPedidos = () => {
                         <Typography variant="body1" fontWeight="bold">#{pedido.id.slice(0, 8)}</Typography>
                       </Box>
                       <Chip
-                        label={pedido.status === 'pending' ? 'Pendente' : pedido.status === 'completed' ? 'Concluído' : pedido.status}
-                        color={pedido.status === 'completed' ? 'success' : pedido.status === 'pending' ? 'warning' : 'default'}
+                        label={
+                          pedido.status === 'pending' ? 'Pendente' :
+                            pedido.status === 'payment_confirmed' ? 'Pagamento Confirmado' :
+                              pedido.status === 'in_production' ? 'Em Produção' :
+                                pedido.status === 'awaiting_pickup' ? 'Aguardando Retirada' :
+                                  pedido.status === 'shipped' ? 'Enviado' :
+                                    pedido.status === 'delivered' ? 'Entregue' :
+                                      pedido.status
+                        }
+                        color={
+                          ['payment_confirmed', 'delivered'].includes(pedido.status) ? 'success' :
+                            ['pending', 'in_production'].includes(pedido.status) ? 'warning' :
+                              'info'
+                        }
                         size="small"
                       />
                     </Box>
@@ -250,8 +262,20 @@ const AcompanhamentoPedidos = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={pedido.status === 'pending' ? 'Pendente' : pedido.status === 'completed' ? 'Concluído' : pedido.status}
-                          color={pedido.status === 'completed' ? 'success' : pedido.status === 'pending' ? 'warning' : 'default'}
+                          label={
+                            pedido.status === 'pending' ? 'Pendente' :
+                              pedido.status === 'payment_confirmed' ? 'Pagamento Confirmado' :
+                                pedido.status === 'in_production' ? 'Em Produção' :
+                                  pedido.status === 'awaiting_pickup' ? 'Aguardando Retirada' :
+                                    pedido.status === 'shipped' ? 'Enviado' :
+                                      pedido.status === 'delivered' ? 'Entregue' :
+                                        pedido.status
+                          }
+                          color={
+                            ['payment_confirmed', 'delivered'].includes(pedido.status) ? 'success' :
+                              ['pending', 'in_production'].includes(pedido.status) ? 'warning' :
+                                'info'
+                          }
                           size="small"
                         />
                       </TableCell>
